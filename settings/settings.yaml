@@ -1,0 +1,253 @@
+# Source for csv inputs; most files will change infrequently, although the
+# ones prefaced with 'current' will change weekly
+
+inputs:
+    key_file: settings/key_file.csv
+    current_applications: current_applications.csv
+    current_roster: current_students.csv
+    strategies: settings/strategy_definitions.csv
+    targets: settings/targets_by_strategy.csv
+    colleges: settings/all_colleges.csv
+    sattoact: settings/sat_to_act.csv
+    bump_list: settings/bump_list.csv
+
+campus_list:
+    - Baker
+    - Bulls
+    - Butler
+    - Comer
+    - DRW
+    - Golder
+    - Hansberry
+    - Johnson
+    - Muchin
+    - Noble
+    - Pritzker
+    - Rauner
+    - RoweClark
+    - Speer
+    - TNA
+    - UIC
+
+###################################################################
+# Location to save live pulls from the Google Docs
+#
+live_backup_folder: live_backups
+live_archive_folder: live_backups/archives
+live_backup_prefix: noble-network
+
+###################################################################
+# Settings for reading and processing "current" inputs
+#
+roster_fields: # fields to grab from the roster file in order
+    - Campus
+    - EFC
+    - LastFirst
+    - StudentID # will be the index
+    - GPA
+    - ACT
+    - SAT
+    - 'Race/ Eth'
+    - Counselor
+    - Advisor
+      
+app_fields: # fields to grab from the Naviance application data in order
+    - Campus
+    - hs_student_id
+    - last_name
+    - first_name
+    - middle_name
+    - collegename
+    - stage
+    - type
+    - result_code
+    - attending
+    - waitlisted
+    - deferred
+    - comments
+    - NCES
+
+use_complex:
+    - Alpha
+    - Bulls
+    - Comer
+
+awards_sort:
+    Standard:
+        - Student
+        - College/University
+    Complex:
+        - Student
+        - 6-Year Minority Grad Rate
+        - College/University
+
+app_status_to_include:
+    Standard:
+        - Accepted!
+        - CHOICE!
+        - Pending
+        - Submitted
+        - Waitlist
+        - Deferred
+    Comer:
+        - Accepted!
+        - CHOICE!
+        - Pending
+        - Submitted
+        - Waitlist
+        - Deferred
+        - Denied
+
+###################################################################
+# Details about the planned columns in the main tabs
+#
+awards_fields:
+    Standard:
+        - Student
+        - College/University
+        - Result (from Naviance)
+        - SID
+        - NCESid
+        - Home/Away
+        - Tuition & Fees (including insurance if req.)
+        - Room & board (if not living at home)
+        - College grants & scholarships
+        - Government grants (Pell/SEOG/MAP)
+        - Net Price (before Loans) <CALCULATED>
+        - Student Loans offered (include all non-parent)
+        - Out of Pocket Cost (Direct Cost-Grants-Loans) <CALCULATED>
+        - Your EFC <DRAWN FROM OTHER TAB>
+        - Unmet need <CALCULATED>
+        - Work Study (enter for comparison if desired)
+    Complex:
+        - Student
+        - Target Grad Rate
+        - Ideal Grad Rate
+        - College/University
+        - "Selectivity\n1=Most+\n2=Most\n3=Highly\n4=Very\n5=Competitive\n6=Less\n7=Non\n8=2 year"
+        - Result (from Naviance)
+        - 6-Year Minority Grad Rate
+        - SID
+        - NCESid
+        - Home/Away
+        - Award Receiv- ed?
+        - Tuition & Fees (including insurance if req.)
+        - Room & board (if not living at home)
+        - College grants & scholarships
+        - Government grants (Pell/SEOG/MAP)
+        - Net Price (before Loans) <CALCULATED>
+        - Student Loans offered (include all non-parent)
+        - Out of Pocket Cost (Direct Cost-Grants-Loans) <CALCULATED>
+        - Your EFC <DRAWN FROM OTHER TAB>
+        - Unmet need <CALCULATED>
+        - Work Study (enter for comparison if desired)
+ 
+efc_tab_fields: #assumes the first is the label for the index
+    - StudentID
+    - LastFirst
+    - EFC
+    - Non-award letter scholarships ($)
+    - "# of years for non-award letter scholarship (1, 2, 3, or 4)"
+    - Scholarship details (name & other details if not a one time or standard recurring award
+
+###################################################################
+# Details about the columns in the merged file
+#
+live_award_fields:
+    - SID
+    - NCESid
+    - Home/Away
+    - Campus
+    - Student
+    - College/University
+    - Result (from Naviance)
+    - Tuition & Fees (including insurance if req.)
+    - Room & board (if not living at home)
+    - College grants & scholarships
+    - Government grants (Pell/SEOG/MAP)
+    - Student Loans offered (include all non-parent)
+    - Work Study (enter for comparison if desired)
+
+live_efc_fields:
+    - Campus
+    - LastFirst
+    - EFC
+
+###################################################################
+# Details about the columns in the decisions options sheet
+#
+
+# Code will depend on the order of these, but putting it here allows
+# for tweaks to the exact label wording above
+decision_option_fields:
+    - SID
+    - NCESid
+    - Home/Away
+    - College/University
+    - Result (from Naviance)
+    - Out of Pocket Cost (Direct Cost-Grants-Loans) <CALCULATED>
+
+###################################################################
+# Details about the drive setup
+#
+drive_folder: 1NGcIt5fvcwjNdAa-JTop8qwXG1vEz4ha
+file_stem: 2018 Aid Award Tracker
+
+###################################################################
+# Details about the Google doc structure:
+#
+efc_tab_name:
+    Standard: EFC data
+    Comer: 7.1.EFC data
+    UIC: EFC and Scholarship data
+award_tab_name:
+    Standard: Award data
+    Comer: 7.Award Data
+decision_options_tab_name:
+    Standard: DecisionOptions
+decision_tab_name:
+    Standard: Decisions
+    Comer: 7.2.Decisions
+efc_header_row:
+    Standard: 1
+award_header_row:
+    Standard: 1
+    Comer: 2
+decision_options_header_row:
+    Standard: 1
+decision_header_row:
+    Standard: 1
+decision_defaults: #keys are the options and values are "grad rate" for choice
+    Standard:
+        'Structured non-college (e.g. Army--enter to right)': 0.1
+        'No college/working': 0.0
+
+###################################################################
+# Details about the Excel report
+#
+report_folder: output_reports
+report_award_fields: #Columns in 'Award data' tab (generally from live_award)
+    # fields with x in the front go to the df, but not the excel
+    - SID: SID
+    - NCESid: NCESid
+    - Home/Away: Home/Away
+    - Race/Eth: ROSTER:SID:Race/ Eth
+    - Campus: ROSTER:SID:Campus
+    - Last,First: Student
+    - College/University: College/University
+    - Result: Result (from Naviance)
+    - comments: APPS:NCESid:SID:comments
+    - 'xGrad rate_All': COLLEGE:NCESid:Adj6yrGrad_All #just for calculating
+    - 'xGrad rate_AAH': COLLEGE:NCESid:Adj6yrGrad_AA_Hisp
+    - 'Grad rate': SPECIAL:xGrad rate_All:xGrad rate_AAH
+    - 'Grad rate for sorting': SPECIAL:Grad rate:comments
+    - 'Tuition & Fees': Tuition & Fees (including insurance if req.)
+    - 'Room & board': Room & board (if not living at home)
+    - 'College grants & scholarships': College grants & scholarships
+    - 'Government grants': Government grants (Pell/SEOG/MAP)
+    - 'Student Loans offered': Student Loans offered (include all non-parent)
+    - 'Work Study': Work Study (enter for comparison if desired)
+
+report_award_formats: #Option formats to override defaults for each column
+    SID:
+        width: 59

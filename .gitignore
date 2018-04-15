@@ -99,3 +99,16 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# editing
+*.swp
+foo*
+*.xlsx
+
+# secret/local data
+settings/key_file*
+settings/bump_list.csv
+client_secret.json
+.credentials
+live_backups/*
+output_reports/*
