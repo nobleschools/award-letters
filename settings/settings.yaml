@@ -173,6 +173,24 @@ live_efc_fields:
     - LastFirst
     - EFC
 
+live_decision_fields: #StudentID is the index
+    - Campus
+    - LastFirst
+    - startRow
+    - endRow
+    - College Choice (dropdown should match with student options)
+    - match (hidden column)
+    - Other College Choice (leave column to the left blank if entering here)
+    - PGR for choice school
+    - Student TGR
+    - PGR-TGR
+    - PGR within 10% of TGR?
+    - Reason for not meeting TGR
+    - Out of Pocket at Choice (pulls from Award data tab weekly)
+    - EFC (pulls from EFC tab)
+    - Exceeds Goal? (no more than 3000 over EFC)
+    - Comments (use for undermatching and affordability concerns)
+
 ###################################################################
 # Details about the columns in the decisions options sheet
 #
@@ -186,6 +204,8 @@ decision_option_fields:
     - College/University
     - Result (from Naviance)
     - Out of Pocket Cost (Direct Cost-Grants-Loans) <CALCULATED>
+    - Student Loans offered (include all non-parent)
+    - College grants & scholarships
 
 ###################################################################
 # Details about the drive setup

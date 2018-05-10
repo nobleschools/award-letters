@@ -41,6 +41,7 @@ def process_config(settings_file, campus):
                 'file_stem', 'efc_tab_fields', 'app_fields', 'roster_fields',
                 'live_efc_fields', 'report_award_fields',
                 'report_award_formats', 'decision_option_fields',
+                'live_decision_fields',
                 ]:
         config[key] = cfg[key]
 
@@ -70,10 +71,11 @@ def p2f(x):
     return None if x == 'N/A' else float(x.strip('%'))/100
 
 def save_live_dfs(dfs, campus, config, debug):
-    '''Takes the current live_ keyed dataframes and saves them to the live
+    """Takes the current live_ keyed dataframes and saves them to the live
     folder, backing up the current item in the live folder to the backup
     folder. If the live folder is in S3, detects that and works with that
-    system'''
+    system
+    """
     # Find all the current DataFrames with 'live_' prefix
     dfs_to_save = [x[5:] for x in dfs.keys() if x[:5] == 'live_']
     if debug and not dfs_to_save:
@@ -89,7 +91,8 @@ def save_live_dfs(dfs, campus, config, debug):
             shutil.copy(full_path, archive_path)
 
         # We have a special index label to preserve for the efc table only
-        index_label = 'StudentID' if key == 'efc' else 'DefaultIndex'
+        index_label = 'StudentID' if key in ['efc',
+                                        'decision'] else 'DefaultIndex'
         dfs['live_'+key].to_csv(full_path, index_label=index_label)
 
 def read_local_live_data(dfs, campus, config, debug):
@@ -97,17 +100,23 @@ def read_local_live_data(dfs, campus, config, debug):
     into the live dataframes'''
     if debug:
         print('Reading local version of live dataframes',flush=True)
-    for key in ['efc', 'award']:
+    for key in ['efc', 'award', 'decision']:
         filename = config['live_backup_prefix']+'-'+campus+'-'+key+'.csv'
         full_path = os.path.join(config['live_backup_folder'],filename)
-        if key == 'efc':
-            dfs['live_'+key] = pd.read_csv(full_path,index_col=0)
+        if os.path.isfile(full_path):
+            if key in ['efc','decision']:
+                dfs['live_'+key] = pd.read_csv(full_path,index_col=0)
+            else:
+                dfs['live_'+key] = pd.read_csv(full_path,index_col=False)
+                dfs['live_'+key].drop(['DefaultIndex'],axis=1,inplace=True)
         else:
-            dfs['live_'+key] = pd.read_csv(full_path,index_col=False)
-            dfs['live_'+key].drop(['DefaultIndex'],axis=1,inplace=True)
+            if debug:
+                print('{} does not exist'.format(full_path))
 
 def combine_all_local_files(dfs, config, debug):
-    '''Runs through the list of all campuses and combines to two merged csvs'''
+    """Runs through the list of all campuses and combines to three
+    merged csvs
+    """
     if debug:
         print('About to combine the files for campuses:')
         print(config['campus_list'])
@@ -115,35 +124,41 @@ def combine_all_local_files(dfs, config, debug):
     big_df = {}
     big_df['live_efc'] = None #This will be empty for the first pass
     big_df['live_award'] = None
+    big_df['live_decision'] = None
 
     # Merge all the files
     for campus in config['campus_list']:
         if debug:
             print('Reading data for {}'.format(campus), flush=True)
         read_local_live_data(dfs, campus, config, debug=False)
-        for key in ['live_efc', 'live_award']:
-            dfs[key]['Campus'] = campus
-            if isinstance(big_df[key], pd.DataFrame):
-                big_df[key] = pd.concat([big_df[key], dfs[key]])
-            else:
-                big_df[key] = dfs[key]
+        for key in ['live_efc', 'live_award', 'live_decision']:
+            if key in dfs.keys():
+                dfs[key]['Campus'] = campus
+                if isinstance(big_df[key], pd.DataFrame):
+                    big_df[key] = pd.concat([big_df[key], dfs[key]])
+                else:
+                    big_df[key] = dfs[key]
+                dfs.pop(key)
     
 
     # Save
-    for key in ['efc', 'award']:
-        # Reduce to just the columns we want
-        these_fields = config['live_'+key+'_fields']
-        big_df['live_'+key] = big_df['live_'+key][these_fields]
-        filename = config['live_backup_prefix']+'-ALL-'+key+'.csv'
-        full_path = os.path.join(config['live_backup_folder'],filename)
-        # If the file already exists, we'll backup to the archive directory
-        if os.path.isfile(full_path):
-            archive_path = os.path.join(config['live_archive_folder'],filename)
-            shutil.copy(full_path, archive_path)
+    for key in ['efc', 'award', 'decision']:
+        if isinstance(big_df['live_'+key], pd.DataFrame):
+            # Reduce to just the columns we want
+            these_fields = config['live_'+key+'_fields']
+            big_df['live_'+key] = big_df['live_'+key][these_fields]
+            filename = config['live_backup_prefix']+'-ALL-'+key+'.csv'
+            full_path = os.path.join(config['live_backup_folder'],filename)
+            # If the file already exists, we'll backup to the archive directory
+            if os.path.isfile(full_path):
+                archive_path = os.path.join(config['live_archive_folder'],
+                                            filename)
+                shutil.copy(full_path, archive_path)
 
-        # We have a special index label to preserve for the efc table only
-        index_label = 'StudentID' if key == 'efc' else 'DefaultIndex'
-        big_df['live_'+key].to_csv(full_path, index_label=index_label)
+            # We have a special index label to preserve for these tables
+            index_label = 'StudentID' if key in ['efc',
+                                                'decision'] else 'DefaultIndex'
+            big_df['live_'+key].to_csv(full_path, index_label=index_label)
 
 
 def read_standard_csv(fn):

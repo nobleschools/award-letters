@@ -19,13 +19,17 @@ def safeint(x):
         return x
 
 def _get_pgr(x, roster_df, college_df, bump_list_df):
-    '''Apply function to get the PGR for a college after determining student
-    race; gives the "15%" bump for any sid/nces pair in the bump_list df'''
+    """Apply function to get the PGR for a college after determining student
+    race; gives the "15%" bump for any sid/nces pair in the bump_list df
+    """
     sid, nces = x
     nces = safeint(nces)
     race = roster_df.loc[sid, 'Race/ Eth']
     field = 'Adj6yrGrad_All' if race in ['W', 'A'] else 'Adj6yrGrad_AA_Hisp'
-    raw_pgr = college_df[field].get(nces, 'TBD')
+    if not pd.isnull(nces):
+        raw_pgr = college_df[field].get(nces, 'TBD')
+    else:
+        raw_pgr = 0.0
     if sid in bump_list_df['SID'].values:
         student_bumps = bump_list_df[bump_list_df['SID']==sid]
         if nces in student_bumps['NCESid'].values:
@@ -37,7 +41,7 @@ def _get_pgr(x, roster_df, college_df, bump_list_df):
 
 def _write_df_to_sheet(ws, df, key, title, na_val='', resize=True,
         use_index=False, use_apps_script=False):
-    '''Takes a dataframe and writes to a google sheet'''
+    """Takes a dataframe and writes to a google sheet"""
     n_rows = len(df)+1
     n_cols = len(df.columns) + (1 if use_index else 0)
     if resize:
@@ -96,16 +100,11 @@ def _write_df_to_sheet(ws, df, key, title, na_val='', resize=True,
         ws.update_cells(write_range)
 
 def read_current_doc(dfs, campus, config, debug):
-    '''Does a simple read of the two main tables and returns them as dfs'''
+    """Does a simple read of the two main tables and returns them as dfs.
+        If the third table (Decisions) is there, it's read as well.
+    """
 
-    # We don't reach this function without checking for the key, so
-    # this should always be a safe reference
-    key_df = dfs['key']
-    efc_sheet_title = config['efc_tab_name']
-    award_sheet_title = config['award_tab_name']
-    doc_key = key_df.loc[campus,'ss_key']
-    efc_header_row = config['efc_header_row']
-    award_header_row = config['award_header_row']
+    doc_key = dfs['key'].loc[campus,'ss_key']
 
     if debug:
         print('About to read doc for {}...'.format(campus), flush=True)
@@ -114,7 +113,7 @@ def read_current_doc(dfs, campus, config, debug):
     t0 = time()
     efc_raw_data = googleapi.call_script_service(
             {"function": "readDataTable",
-             "parameters": [doc_key, efc_sheet_title],
+             "parameters": [doc_key, config['efc_tab_name']],
              })
     if debug:
         print('--EFC read completed in {:.2f} seconds'.format(
@@ -124,19 +123,42 @@ def read_current_doc(dfs, campus, config, debug):
     t0 = time()
     award_raw_data = googleapi.call_script_service(
             {"function": "readDataTable",
-             "parameters": [doc_key, award_sheet_title],
+             "parameters": [doc_key, config['award_tab_name']],
              })
     if debug:
         print('--Award read completed in {:.2f} seconds'.format(
             time()-t0), flush=True)
 
-    # Convert to DataFrames and optionally save to backup folder
+    # Read the Decisions tab
+    t0 = time()
+    decision_raw_data = googleapi.call_script_service(
+            {"function": "readDataTable",
+             "parameters": [doc_key, config['decision_tab_name']],
+             })
+    if debug:
+        if decision_raw_data[0][0] == 'NULL':
+            print('--Decision tab has NO DATA!')
+        else:
+            print('--Decision read completed in {:.2f} seconds'.format(
+                time()-t0), flush=True)
+
+
+    # Convert to DataFrames
     # The header row variables are based on Excel references starting at 1
-    efc_live_df = pd.DataFrame(efc_raw_data[int(efc_header_row):],
-            columns=efc_raw_data[(int(efc_header_row)-1)])
+    efc_header = int(config['efc_header_row'])
+    award_header = int(config['award_header_row'])
+    decision_header = int(config['decision_header_row'])
+    efc_live_df = pd.DataFrame(efc_raw_data[efc_header:],
+                               columns=efc_raw_data[(efc_header-1)])
     efc_live_df.set_index('StudentID', inplace=True)
-    award_live_df = pd.DataFrame(award_raw_data[int(award_header_row):],
-            columns=award_raw_data[(int(award_header_row)-1)])
+    award_live_df = pd.DataFrame(award_raw_data[award_header:],
+                                 columns=award_raw_data[(award_header-1)])
+
+    if decision_raw_data[0][0] != 'NULL':
+        decision_live_df = pd.DataFrame(decision_raw_data[decision_header:],
+                columns=decision_raw_data[(decision_header-1)])
+        decision_live_df.set_index('StudentID', inplace=True)
+        dfs['live_decision'] = decision_live_df
 
     dfs['live_award'] = award_live_df
     dfs['live_efc'] = efc_live_df
@@ -163,20 +185,13 @@ def _do_table_diff_df(current_data, new_data, debug):
     current_tuples = [(x[1], safeint(x[2]), x[3]) for x in
                             current_data_clean.itertuples()]
     new_tuples = [x[1:4] for x in new_data.itertuples()]
-    '''
-    for i in range(10):
-        for j in range(3):
-            print('({}){} vs ({}){}\t'.format(current_tuples[i][j],
-                type(current_tuples[i][j]), new_tuples[i][j],
-                type(new_tuples[i][j])), end='', flush=True)
-        print('',flush=True)
-    sys.exit()
-    '''
+
     indices_to_insert = list(set(new_tuples)-set(current_tuples))
     indices_to_delete = list(set(current_tuples)-set(new_tuples))
 
     # Build a record of rows present in both tables
     joint_tuples = list(set(current_tuples) & set(new_tuples))
+
     # Then find the conflict in app results and save the "new" values to push
     joint_current = [x[1:] for x in current_data_clean.itertuples() if
             x[1:4] in joint_tuples]
@@ -190,24 +205,23 @@ def _match_to_tuple_index(x, tuple_list):
     sid, ncesid, home_away = x
     return (sid, ncesid, home_away) in tuple_list
 
+def _calculate_6000_out_of_pocket(x):
+    """Apply function to increase out_of_pocket if loans are > 6,000"""
+    loans, out_of_pocket = x
+    if isinstance(loans, float) and isinstance(out_of_pocket, float):
+        if loans > 6000:
+            return (out_of_pocket + (loans-6000))
+    return out_of_pocket
+
 def refresh_decisions(dfs, campus, config, debug):
     """
     Works with the two decisions tabs specifically to make sure they're
     updated from the Award data and EFC tabs. Creates the two tabs if they do
     not exist.
     """
-    # Name local dfs:
-    key_df = dfs['key']
-    live_award_df = dfs['live_award']
-    live_efc_df = dfs['live_efc']
-
     # Set local config variables
-    efc_sheet_title = config['efc_tab_name']
-    award_sheet_title = config['award_tab_name']
     decision_options_sheet_title = config['decision_options_tab_name']
     decision_sheet_title = config['decision_tab_name']
-    efc_header_row = config['efc_header_row']
-    award_header_row = config['award_header_row']
     decision_options_header_row = config['decision_options_header_row']
     decision_header_row = config['decision_header_row']
     decision_defaults = config['decision_defaults']
@@ -219,24 +233,31 @@ def refresh_decisions(dfs, campus, config, debug):
 
     # First, pair down the tables to just the columns we need
     # And add any lookup values (PGR, TGR) from local tables
-    sid, nces, home, college, result_code, out_of_pocket = do_fields
-    a_df = live_award_df[do_fields]
+    sid, nces, home, college, result_code, out_of_pocket,s_loans,cgs = do_fields
+    a_df = dfs['live_award'][do_fields]
     a_df = a_df[a_df[result_code] != 'Denied'].sort_values([sid, college])
+    a_df[s_loans] = a_df[s_loans].fillna(0.0)
     a_df[out_of_pocket] = a_df[out_of_pocket].fillna('TBD')
+    a_df['out_of_pocket6000'] = a_df[[s_loans, out_of_pocket]].apply(
+            _calculate_6000_out_of_pocket, axis=1)
     a_df['PGR'] = a_df[[sid, nces]].apply(_get_pgr,
                     args=(dfs['ros'],dfs['college'],dfs['bump_list']), axis=1)
-    a_df = a_df[[sid, college, result_code, 'PGR', out_of_pocket]]
+    a_df['PGR'] = a_df['PGR'].fillna('N/A')
+    a_df[cgs] = a_df[cgs].fillna('N/A')
+    a_df[result_code] = a_df[result_code].fillna('TBD')
+    a_df = a_df[[sid, college, result_code, 'PGR', 'out_of_pocket6000',cgs]]
 
-    s_df = live_efc_df.copy()
+    s_df = dfs['live_efc'].copy()
     s_df['Student TGR'] = s_df.index.map(
             lambda x: dfs['ros'].loc[x, 'Target Grad Rate'])
     s_df = s_df[['LastFirst', 'Student TGR']]
+    s_df['Student TGR'] = s_df['Student TGR'].fillna('TBD')
 
     a_df.to_csv('foo_award.csv')
     s_df.to_csv('foo_s.csv')
 
     # Second, create lists of lists for the actual tables
-    do_table = [['student','college','Result','pgr','out_of_pocket']]
+    do_table = [['student','college','Result','pgr','out_of_pocket','cgs']]
     d_table = [['SID','LastFirst','SR','ER','Choice','Student TGR']]
     current_row = 1 + decision_options_header_row # index of choice table
     for index, row in s_df.iterrows():
@@ -245,23 +266,28 @@ def refresh_decisions(dfs, campus, config, debug):
         these_options = a_df[a_df[sid]==index]
 
         # Second determine if any of them are UNIQUELY CHOICE!
-        this_choice = ''
+        this_choice = ""
         if len(these_options):
             choice_options = these_options[
                     these_options[result_code]=='CHOICE!']
             if len(choice_options) == 1:
-                # If there are two "CHOICE!" schools (Home/Away), leave blank
+                # If there are two "CHOICE!" schools (Home/Away),
+                # Pick the Home one
                 this_choice = choice_options.iloc[0,1]
+            elif len(choice_options) == 2:
+                this_choice = choice_options.iloc[0,1]
+                if this_choice.endswith('Campus'):
+                    this_choice = choice_options.iloc[1,1]
 
         # Create do rows: first blank, second all options, third standard
-        do_table.append([index, '', 'N/A', 'TBD', 'TBD'])
+        do_table.append([index, '', 'N/A', 'TBD', 'TBD',0.0])
 
         if len(these_options):
             for ignore, option in these_options.iterrows():
                 do_table.append(list(option))
 
         for label, pgr in decision_defaults.items():
-            do_table.append([index, label, 'N/A', pgr, 0.0])
+            do_table.append([index, label, 'N/A', pgr, 0.0,0.0])
 
         # Create d row using the count from above
         num_rows = 1 + len(these_options) + len(decision_defaults)
@@ -271,9 +297,35 @@ def refresh_decisions(dfs, campus, config, debug):
 
     filework.save_csv_from_table('foo_do.csv','.',do_table)
     filework.save_csv_from_table('foo_d.csv','.',d_table)
+
     ###################################################################
     ## Second, push the starter tables to the doc where the AppsScript
     ## will handle updating things in the decisons_options and decisions tabs
+    doc_key = dfs['key'].loc[campus,'ss_key']
+
+    if debug:
+        print('DecisionOptions tab, pushing {} rows...'.format(
+            len(do_table)),end='',flush=True)
+    t0 = time()
+    googleapi.call_script_service(
+        {"function": "refreshDecisionOptions",
+         "parameters": [doc_key, decision_options_sheet_title, do_table],
+         })
+    if debug:
+        print('done in {:.2f} seconds'.format(time()-t0), flush=True)
+
+    if debug:
+        print('Decisions tab, pushing {} rows...'.format(
+            len(d_table)),end='',flush=True)
+    t0 = time()
+    googleapi.call_script_service(
+        {"function": "refreshDecisions",
+         "parameters": [doc_key, decision_sheet_title,
+                        decision_options_sheet_title, d_table],
+         })
+    if debug:
+        print('done in {:.2f} seconds'.format(time()-t0), flush=True)
+
 
 
 
@@ -334,7 +386,6 @@ def sync_doc_rows(dfs, campus, config, debug):
                  })
         if debug:
             print('done in {:.2f} seconds'.format(time()-t0), flush=True)
-            #print(a_response, flush=True)
 
     ## Delete the rows for removal
     if efc_indices_to_delete:
@@ -390,6 +441,21 @@ def sync_doc_rows(dfs, campus, config, debug):
         if debug:
             print('done in {:.2f} seconds'.format(time()-t0), flush=True)
             #print(a_response, flush=True)
+
+    elif result_changes:
+        if debug:
+            print('Awards tab, changing decision on {} rows...'.format(
+                len(result_changes)),end='', flush=True)
+        t0 = time()
+        a_response = googleapi.call_script_service(
+                {"function": "updateAwardStatuses",
+                 "parameters": [doc_key, award_sheet_title, result_changes,
+                                award_header_row], 
+                 })
+        if debug:
+            print('done in {:.2f} seconds'.format(time()-t0), flush=True)
+
+
 
     ## Delete the rows for removal
     if award_ix_to_delete:

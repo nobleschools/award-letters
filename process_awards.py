@@ -17,7 +17,10 @@ def all_main(settings_file, mode, campus, debug):
     for local_campus in config['campus_list']:
         if debug:
             print(local_campus)
-        main(settings_file, mode, local_campus, debug)
+        if (local_campus == 'Speer')&(mode == 'push_local'):
+            print('Skipping Speer')
+        else:
+            main(settings_file, mode, local_campus, debug)
 
 def main(settings_file, mode, campus, debug):
     """Master control file for processing awards:
