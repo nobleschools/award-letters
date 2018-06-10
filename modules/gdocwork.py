@@ -11,8 +11,15 @@ import pandas as pd
 from modules import googleapi
 from modules import filework
 
+def safefloat(x):
+    """Converts to a float if possible"""
+    try:
+        return float(x)
+    except:
+        return x
+
 def safeint(x):
-    '''Converts to an integer if possible'''
+    """Converts to an integer if possible"""
     try:
         return int(x)
     except:
@@ -208,9 +215,10 @@ def _match_to_tuple_index(x, tuple_list):
 def _calculate_6000_out_of_pocket(x):
     """Apply function to increase out_of_pocket if loans are > 6,000"""
     loans, out_of_pocket = x
+    out_of_pocket = safefloat(out_of_pocket)
     if isinstance(loans, float) and isinstance(out_of_pocket, float):
-        if loans > 6000:
-            return (out_of_pocket + (loans-6000))
+        if loans > 6000.0:
+            return (out_of_pocket + (loans-6000.0))
     return out_of_pocket
 
 def refresh_decisions(dfs, campus, config, debug):
@@ -252,7 +260,7 @@ def refresh_decisions(dfs, campus, config, debug):
             lambda x: dfs['ros'].loc[x, 'Target Grad Rate'])
     s_df = s_df[['LastFirst', 'Student TGR']]
     s_df['Student TGR'] = s_df['Student TGR'].fillna('TBD')
-
+    
     a_df.to_csv('foo_award.csv')
     s_df.to_csv('foo_s.csv')
 
@@ -411,7 +419,7 @@ def sync_doc_rows(dfs, campus, config, debug):
         debug)
     
     ## Push the new rows to the doc
-    if award_ix_to_insert:
+    if award_ix_to_insert and (campus!='Speer'):
         # Get the full rows of data to add
         award_to_add_df = new_award_df[new_award_df[
             ['SID','NCESid','Home/Away']].apply(_match_to_tuple_index,
