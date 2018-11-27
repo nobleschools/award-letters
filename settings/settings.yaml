@@ -172,6 +172,10 @@ live_efc_fields:
     - Campus
     - LastFirst
     - EFC
+    - Non-award letter scholarships ($)
+    - '# of years for non-award letter scholarship (1, 2, 3, or 4)'
+    - 'Scholarship details (name & other details if not a one time or standard recurring award'
+      
 
 live_decision_fields: #StudentID is the index
     - Campus
