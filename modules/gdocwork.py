@@ -419,7 +419,7 @@ def sync_doc_rows(dfs, campus, config, debug):
         debug)
     
     ## Push the new rows to the doc
-    if award_ix_to_insert:
+    if award_ix_to_insert and (campus!='Speer'):
         # Get the full rows of data to add
         award_to_add_df = new_award_df[new_award_df[
             ['SID','NCESid','Home/Away']].apply(_match_to_tuple_index,
