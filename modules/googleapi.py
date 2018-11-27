@@ -99,6 +99,7 @@ def call_script_service(request, credentials=None, service=None):
         service = discovery.build('script', SCRIPT_V, http=http)
     
     try:
+        request["devMode"]="true" #runs last save instead of last deployed
         response = service.scripts().run(body=request,
                 scriptId=SCRIPT_ID).execute()
 

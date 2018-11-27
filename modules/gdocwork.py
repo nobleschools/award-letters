@@ -53,58 +53,36 @@ def _write_df_to_sheet(ws, df, key, title, na_val='', resize=True,
     n_cols = len(df.columns) + (1 if use_index else 0)
     if resize:
         ws.resize(rows=n_rows, cols=n_cols)
-
-    # Option to either use Apps Script (faster) or gspread to write the data
-    if use_apps_script:
-        list_of_list_data = [list(df.columns)]
-        if use_index:
-            list_of_list_data[0].insert(0, use_index)
-        for index, row in df.iterrows():
-            if use_index:
-                this_row = list(row)
-                this_row.insert(0, index)
-                list_of_list_data.append(this_row)
-            else:
-                list_of_list_data.append(row)
-
-        # Now replace the n_as:
-        list_of_list_data = [[na_val if pd.isnull(x) else x for x in row]
-                               for row in list_of_list_data]
         
-        # now send the data to the Apps Script API
+    # Turn data into list of lists for writing
+    l_o_l = [([use_index] if use_index else [])+df.columns.tolist() #header
+            ] + (df.reset_index() if use_index else df).values.tolist() #rows
+    
+    # Replace the n/a's
+    l_o_l = [[na_val if pd.isnull(x) else x for x in row]
+                for row in l_o_l]
+    
+    # Option to either use Apps Script or gspread to write the data
+    if use_apps_script:
         googleapi.call_script_service(
             {"function": "writeDataTable",
-             "parameters": [key, title, list_of_list_data],
+             "parameters": [key, title, l_o_l],
              })
-
     else:
         # Create a write_range for the gspread library and then pair with data
         write_range = ws.range(1,1, n_rows, n_cols)
-
-        # Serialize the data for writing
-        flat_data = list(df.columns)
-        if use_index:
-            flat_data.insert(0, use_index)
-        for index, row in df.iterrows():
-            if use_index:
-                flat_data.extend([index])
-            flat_data.extend(list(row))
-
-        # Now replace the n_as:
-        flat_data = [na_val if pd.isnull(x) else x for x in flat_data]
-
-        # Data should be serialized--now determine which fields not to write
-        pop_list = []
-        for i, val in enumerate(flat_data):
-            if val != '':
-                write_range[i].value = val
+        
+        # Serialize the list of lists to match the write range
+        flat_data = [item for row in l_o_l for item in row]
+        
+        # Now determine which fields not to write and pop the unwritten cells
+        for i in range(len(flat_data)-1,-1,-1):
+            if flat_data[i] == '':
+                write_range.pop(i)
             else:
-                pop_list.append(i)
-        pop_list.reverse()
-        for i in pop_list:
-            write_range.pop(i) # do this backwards so the elements don't reindex
-
-        ws.update_cells(write_range)
+                write_range[i].value = flat_data[i]
+        
+        ws.update_cells(write_range, value_input_option='USER_ENTERED')
 
 def read_current_doc(dfs, campus, config, debug):
     """Does a simple read of the two main tables and returns them as dfs.
@@ -489,7 +467,7 @@ def write_new_doc(dfs, campus, config, debug):
     folder = config['drive_folder']
     file_stem = config['file_stem']
     efc_sheet_title = config['efc_tab_name']
-    award_sheet_title = config['award_tab_name']
+    awards_sheet_title = config['award_tab_name']
 
 
     # Only runs if there is no current doc for the campus
@@ -532,6 +510,7 @@ def write_new_doc(dfs, campus, config, debug):
         print('--Title updated in {:.2f} seconds'.format(
             time()-t0), flush=True)
     t0 = time()
+    ws = wb.worksheet(efc_sheet_title) # This line needed until gspread>=3.1.0
     _write_df_to_sheet(ws, efc_df, new_key, efc_sheet_title,
                                             use_index='StudentID')
     if debug:
