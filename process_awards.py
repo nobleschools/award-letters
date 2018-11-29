@@ -1,15 +1,15 @@
 #!python3
 
-'''Master file for processing csv data and interacting with Google Docs
-   containing award letters'''
+"""Master file for processing csv data and interacting with Google Docs
+   containing award letters"""
 
 import argparse
 import pandas as pd
 
-from modules import filework # Works with csv and yaml inputs
-from modules import basedata # Creates "clean" tables for Google Docs
-from modules import gdocwork # Works with the Google Docs
-from modules import excelreports # creates Excel reports for a campus
+from modules import filework #Works with csv and yaml inputs
+from modules import basedata #Creates "clean" tables for Google Docs
+from modules import gdocwork #Works with the Google Docs
+from modules import excelreports #creates Excel reports for a campus
 
 def all_main(settings_file, mode, campus, debug):
     """Meta function to call the below in series, looping through campuses"""
@@ -39,13 +39,13 @@ def main(settings_file, mode, campus, debug):
         config = filework.process_config(settings_file, campus)
 
     # Grab csv inputs unless we're only saving the gdocs to a file
-    if mode in ['all', 'make_new', 'push_local', 'report', 'refresh_decisions']:
+    if mode in ['all', 'make_new', 'push_local','report','refresh_decisions']:
         dfs = filework.read_dfs(config, debug)
     else:
         dfs = {'key':filework.read_doclist(config['key_file'])}
 
     # Add calculated fields to roster files
-    if mode in ['all', 'make_new', 'push_local', 'report', 'refresh_decisions']:
+    if mode in ['all', 'make_new', 'push_local','report','refresh_decisions']:
         dfs['ros'] = basedata.add_strat_and_grs(dfs['ros'],dfs['strat'],
             dfs['target'], dfs['sattoact'],campus,debug)
 

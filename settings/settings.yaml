@@ -67,12 +67,13 @@ app_fields: # fields to grab from the Naviance application data in order
     - comments
     - NCES
 
-use_complex:
+use_complex: # Schools that want a more complex set of award fields
     - Alpha
     - Bulls
     - Comer
+    - Butler
 
-awards_sort:
+award_sort:
     Standard:
         - Student
         - College/University
@@ -81,7 +82,7 @@ awards_sort:
         - 6-Year Minority Grad Rate
         - College/University
 
-app_status_to_include:
+app_status_to_include: #Statuses to push to the Google Doc
     Standard:
         - Accepted!
         - CHOICE!
@@ -101,7 +102,7 @@ app_status_to_include:
 ###################################################################
 # Details about the planned columns in the main tabs
 #
-awards_fields:
+award_fields:
     Standard:
         - Student
         - College/University
@@ -119,6 +120,8 @@ awards_fields:
         - Your EFC <DRAWN FROM OTHER TAB>
         - Unmet need <CALCULATED>
         - Work Study (enter for comparison if desired)
+        - Unique
+        - Award
     Complex:
         - Student
         - Target Grad Rate
@@ -141,6 +144,8 @@ awards_fields:
         - Your EFC <DRAWN FROM OTHER TAB>
         - Unmet need <CALCULATED>
         - Work Study (enter for comparison if desired)
+        - Unique
+        - Award
  
 efc_tab_fields: #assumes the first is the label for the index
     - StudentID
@@ -149,6 +154,11 @@ efc_tab_fields: #assumes the first is the label for the index
     - Non-award letter scholarships ($)
     - "# of years for non-award letter scholarship (1, 2, 3, or 4)"
     - Scholarship details (name & other details if not a one time or standard recurring award
+    - Acceptances
+    - Unique Awards
+    - '% of awards collected'
+    - Total grants & scholarships (1 yr value)
+    - Total grants & scholarships (4 yr value)
 
 ###################################################################
 # Details about the columns in the merged file
@@ -167,6 +177,8 @@ live_award_fields:
     - Government grants (Pell/SEOG/MAP)
     - Student Loans offered (include all non-parent)
     - Work Study (enter for comparison if desired)
+    - Unique
+    - Award
 
 live_efc_fields:
     - Campus
@@ -175,6 +187,11 @@ live_efc_fields:
     - Non-award letter scholarships ($)
     - '# of years for non-award letter scholarship (1, 2, 3, or 4)'
     - 'Scholarship details (name & other details if not a one time or standard recurring award'
+    - Acceptances
+    - Unique Awards
+    - '% of awards collected'
+    - Total grants & scholarships (1 yr value)
+    - Total grants & scholarships (4 yr value)
       
 
 live_decision_fields: #StudentID is the index
@@ -238,7 +255,6 @@ efc_header_row:
     Standard: 1
 award_header_row:
     Standard: 1
-    Comer: 2
 decision_options_header_row:
     Standard: 1
 decision_header_row:

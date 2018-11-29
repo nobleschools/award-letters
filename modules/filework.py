@@ -19,11 +19,11 @@ def process_config(settings_file, campus):
 
     # Handle the settings based on the complex/standard switch
     if campus in cfg['use_complex']:
-        config['awards_fields'] = cfg['awards_fields']['Complex']
-        config['awards_sort'] = cfg['awards_sort']['Complex']
+        config['award_fields'] = cfg['award_fields']['Complex']
+        config['award_sort'] = cfg['award_sort']['Complex']
     else:
-        config['awards_fields'] = cfg['awards_fields']['Standard']
-        config['awards_sort'] = cfg['awards_sort']['Standard']
+        config['award_fields'] = cfg['award_fields']['Standard']
+        config['award_sort'] = cfg['award_sort']['Standard']
 
     # For campus switches that modify "standard"
     for key in ['app_status_to_include', 'efc_tab_name', 'award_tab_name',

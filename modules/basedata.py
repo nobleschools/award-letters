@@ -126,6 +126,8 @@ def add_strat_and_grs(df, strat_df, target_df, sattoact_df, campus, debug):
     Adds Strategy and Target/Ideal grad rate numbers to the roster table
     """
     df = df.copy()
+    if campus != 'All':
+        df = df[df['Campus']==campus]
     df['local_sat_in_act'] = df['SAT'].apply(_get_sat_translation,
             args=(sattoact_df,))
     df['local_act_max'] = df[['ACT','local_sat_in_act']].apply(
@@ -139,24 +141,24 @@ def add_strat_and_grs(df, strat_df, target_df, sattoact_df, campus, debug):
             ['Stra-tegy','GPA','EFC','Race/ Eth']].apply(
             _get_gr_target, axis=1, args=(target_df,'ideal'))
  
-    if campus != 'All':
-        df = df[df['Campus']==campus]
     if debug:
         print('Total roster length of {}.'.format(len(df)))
     return df
 
 def make_clean_gdocs(dfs, config, debug):
-    """Creates a set of tables for pushing to Google Docs assuming there
-    is no existing award data based on the applications and roster files"""
+    """
+    Creates a set of tables for pushing to Google Docs assuming there
+    is no existing award data based on the applications and roster files
+    """
 
     # Pullout local config settings:
     ros_df = dfs['ros']
     app_df = dfs['app']
     college_df = dfs['college']
-    awards_fields = config['awards_fields']
+    award_fields = config['award_fields']
     efc_tab_fields = config['efc_tab_fields']
     include_statuses = config['app_status_to_include']
-    awards_sort = config['awards_sort']
+    award_sort = config['award_sort']
 
     if debug:
         print('Creating "Blank" Google Docs tables from source csvs',
@@ -228,6 +230,7 @@ def make_clean_gdocs(dfs, config, debug):
             'Your EFC <DRAWN FROM OTHER TAB>',
             'Unmet need <CALCULATED>',
             'Work Study (enter for comparison if desired)',
+            'Award',
             ]:
         award_df[f]=''
 
@@ -238,8 +241,10 @@ def make_clean_gdocs(dfs, config, debug):
             lambda x: x[0] + ('' if x[1]=='Campus' else '--At Home'), axis=1)
     award_df['local'] = award_df['local'].apply(
             lambda x: 'Home' if x=='Both' else x)
+    award_df['Unique'] = 1
     # these are the duplicate rows
     both_rows['local'] = 'Campus'
+    both_rows['Unique'] = 0
     both_rows['cname'] = both_rows['cname']+'--On Campus'
     award_df = pd.concat([award_df, both_rows])
 
@@ -268,20 +273,20 @@ def make_clean_gdocs(dfs, config, debug):
             'local': 'Home/Away',
             }
     use_mapper = {key: value for key, value in mapper.items() if
-                            value in awards_fields}
+                            value in award_fields}
     award_df.rename(columns=use_mapper, inplace=True)
 
     # Final reduce the table to just what's going in the Google Doc
-    award_df = award_df[awards_fields]
+    award_df = award_df[award_fields]
 
     # Sort the table based on config file
-    #awards_sort is a list with the right fields
-    if awards_sort[1] == 'College/University':
+    #award_sort is a list with the right fields
+    if award_sort[1] == 'College/University':
         sort_order = [True, True]
     else:
         sort_order = [True, False,True]
 
-    award_df.sort_values(by=awards_sort,ascending=sort_order, inplace=True)
+    award_df.sort_values(by=award_sort,ascending=sort_order, inplace=True)
 
     dfs['award'] = award_df
     dfs['efc'] = efc_df

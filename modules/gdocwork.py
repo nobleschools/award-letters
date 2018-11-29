@@ -8,6 +8,8 @@ import sys
 from time import time
 import gspread
 import pandas as pd
+import numpy as np
+
 from modules import googleapi
 from modules import filework
 
@@ -85,15 +87,42 @@ def _write_df_to_sheet(ws, df, key, title, na_val='', resize=True,
         ws.update_cells(write_range, value_input_option='USER_ENTERED')
 
 def read_current_doc(dfs, campus, config, debug):
-    """Does a simple read of the two main tables and returns them as dfs.
-        If the third table (Decisions) is there, it's read as well.
     """
-
+    Does a simple read of the two main tables and saves them as dfs.
+    If the third table (Decisions) is there, it's read as well.
+    """
     doc_key = dfs['key'].loc[campus,'ss_key']
 
     if debug:
         print('About to read doc for {}...'.format(campus), flush=True)
 
+    # Start refactoring here with a list of constant tuples to loop the reads
+    sheets = ['efc','award','decision']
+    for sheet in sheets:
+        t0 = time()
+        
+        # First do the read
+        raw_data = googleapi.call_script_service(
+            {"function": "readDataTable",
+             "parameters": [doc_key, config[sheet+'_tab_name']],
+             })
+        if debug:
+            print('--{} read completed in {:.2f} seconds'.format(
+                sheet, time()-t0), flush=True)
+        if raw_data[0][0] == 'NULL':
+            if debug:
+                print('--'+sheet+' tab has no data')
+            continue
+        
+        # Then convert to DataFrame inside the df dict
+        header_row_ix = int(config[sheet+'_header_row'])
+        live_df = 'live_'+sheet
+        dfs[live_df] = pd.DataFrame(raw_data[header_row_ix:],
+                          columns=raw_data[(header_row_ix-1)])
+        if sheet in ['efc', 'decision']:
+            dfs[live_df].set_index('StudentID', inplace=True)
+            
+    """   
     # Read the EFC tab
     t0 = time()
     efc_raw_data = googleapi.call_script_service(
@@ -147,6 +176,7 @@ def read_current_doc(dfs, campus, config, debug):
 
     dfs['live_award'] = award_live_df
     dfs['live_efc'] = efc_live_df
+    """
 
 def _do_table_diff(current_index_set, new_index_set):
     """Utility function to perform a couple of set operations"""
@@ -391,16 +421,20 @@ def sync_doc_rows(dfs, campus, config, debug):
     # Second the Award tab
     ## Make a comparison of new rows and rows to delete
     # figure out the number of error indices in live data:
+    new_award_df['NCESid'].replace(np.nan,'N/A', inplace=True) # fix for prop-
+    live_award_df['NCESid'].replace(np.nan,'N/A', inplace=True)#agating N/As
+    
     award_ix_to_insert, award_ix_to_delete, result_changes = _do_table_diff_df(
         live_award_df[['SID','NCESid','Home/Away','Result (from Naviance)']],
         new_award_df[['SID','NCESid','Home/Away','Result (from Naviance)']],
         debug)
     
     ## Push the new rows to the doc
-    if award_ix_to_insert and (campus!='Speer'):
+    if award_ix_to_insert:
         # Get the full rows of data to add
         award_to_add_df = new_award_df[new_award_df[
-            ['SID','NCESid','Home/Away']].apply(_match_to_tuple_index,
+            ['SID','NCESid','Home/Away']].apply(
+                _match_to_tuple_index,
                 axis=1, args=(award_ix_to_insert,))]
 
         # Now convert it to a list of headers and a list of lists for data
@@ -467,7 +501,7 @@ def write_new_doc(dfs, campus, config, debug):
     folder = config['drive_folder']
     file_stem = config['file_stem']
     efc_sheet_title = config['efc_tab_name']
-    awards_sheet_title = config['award_tab_name']
+    award_sheet_title = config['award_tab_name']
 
 
     # Only runs if there is no current doc for the campus
@@ -528,19 +562,19 @@ def write_new_doc(dfs, campus, config, debug):
 
     ## Make the second, awards tab
     t0 = time()
-    ws = wb.add_worksheet(title=awards_sheet_title, rows=5, cols=5)
+    ws = wb.add_worksheet(title=award_sheet_title, rows=5, cols=5)
     if debug:
         print('--Added Award data sheet in {:.2f} seconds'.format(
             time()-t0), flush=True)
     t0 = time()
-    _write_df_to_sheet(ws, award_df, new_key, awards_sheet_title)
+    _write_df_to_sheet(ws, award_df, new_key, award_sheet_title)
     if debug:
         print('--Award data written in {:.2f} seconds'.format(
             time()-t0), flush=True)
     t0 = time()
     googleapi.call_script_service(
             {"function": "doAwardsFormats",
-             "parameters": [new_key, awards_sheet_title],
+             "parameters": [new_key, award_sheet_title],
              })
     if debug:
         print('--Formatting (AppsScript) completed in {:.2f} seconds'.format(
