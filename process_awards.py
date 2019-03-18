@@ -11,13 +11,20 @@ from modules import basedata #Creates "clean" tables for Google Docs
 from modules import gdocwork #Works with the Google Docs
 from modules import excelreports #creates Excel reports for a campus
 
-def all_main(settings_file, mode, campus, debug):
+def all_main(settings_file, mode, campus, debug, skip):
     """Meta function to call the below in series, looping through campuses"""
     config = filework.process_config(settings_file, campus)
+    skiplist = skip.split(sep=',') if skip else []
+    
     for local_campus in config['campus_list']:
-        if debug:
-            print(local_campus)
-        main(settings_file, mode, local_campus, debug)
+        if local_campus not in skiplist:
+            if debug:
+                print(local_campus)
+            main(settings_file, mode, local_campus, debug)
+        else:
+            if debug:
+                print('Skipping {}'.format(local_campus))
+
 
 def main(settings_file, mode, campus, debug):
     """Master control file for processing awards:
@@ -110,6 +117,11 @@ if __name__ == '__main__':
             dest='campus', action='store',
             help='Single campus name (default "All")',
             default='All')
+            
+    parser.add_argument('-k', '--skip',
+            dest='skip', action='store',
+            help='Campus(es) to skip for an "All" call',
+            default='')
 
     parser.add_argument('-q', '--quiet',
             dest='debug', action='store_false', default=True,
@@ -123,8 +135,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.campus == 'All': # Special meta_function to loop through all
-        all_main(args.settings_file, args.mode, args.campus, args.debug)
+    if args.campus == 'All' and args.mode != 'combine':
+        # Special meta_function to loop through all
+        all_main(args.settings_file, args.mode, args.campus, args.debug,
+            args.skip)
     else:
         campus = 'All' if args.mode == 'combine' else args.campus
         main(args.settings_file, args.mode, campus, args.debug)

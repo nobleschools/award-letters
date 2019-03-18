@@ -121,62 +121,7 @@ def read_current_doc(dfs, campus, config, debug):
                           columns=raw_data[(header_row_ix-1)])
         if sheet in ['efc', 'decision']:
             dfs[live_df].set_index('StudentID', inplace=True)
-            
-    """   
-    # Read the EFC tab
-    t0 = time()
-    efc_raw_data = googleapi.call_script_service(
-            {"function": "readDataTable",
-             "parameters": [doc_key, config['efc_tab_name']],
-             })
-    if debug:
-        print('--EFC read completed in {:.2f} seconds'.format(
-            time()-t0), flush=True)
 
-    # Read the Award tab
-    t0 = time()
-    award_raw_data = googleapi.call_script_service(
-            {"function": "readDataTable",
-             "parameters": [doc_key, config['award_tab_name']],
-             })
-    if debug:
-        print('--Award read completed in {:.2f} seconds'.format(
-            time()-t0), flush=True)
-
-    # Read the Decisions tab
-    t0 = time()
-    decision_raw_data = googleapi.call_script_service(
-            {"function": "readDataTable",
-             "parameters": [doc_key, config['decision_tab_name']],
-             })
-    if debug:
-        if decision_raw_data[0][0] == 'NULL':
-            print('--Decision tab has NO DATA!')
-        else:
-            print('--Decision read completed in {:.2f} seconds'.format(
-                time()-t0), flush=True)
-
-
-    # Convert to DataFrames
-    # The header row variables are based on Excel references starting at 1
-    efc_header = int(config['efc_header_row'])
-    award_header = int(config['award_header_row'])
-    decision_header = int(config['decision_header_row'])
-    efc_live_df = pd.DataFrame(efc_raw_data[efc_header:],
-                               columns=efc_raw_data[(efc_header-1)])
-    efc_live_df.set_index('StudentID', inplace=True)
-    award_live_df = pd.DataFrame(award_raw_data[award_header:],
-                                 columns=award_raw_data[(award_header-1)])
-
-    if decision_raw_data[0][0] != 'NULL':
-        decision_live_df = pd.DataFrame(decision_raw_data[decision_header:],
-                columns=decision_raw_data[(decision_header-1)])
-        decision_live_df.set_index('StudentID', inplace=True)
-        dfs['live_decision'] = decision_live_df
-
-    dfs['live_award'] = award_live_df
-    dfs['live_efc'] = efc_live_df
-    """
 
 def _do_table_diff(current_index_set, new_index_set):
     """Utility function to perform a couple of set operations"""
@@ -213,6 +158,7 @@ def _do_table_diff_df(current_data, new_data, debug):
     joint_new = [x[1:] for x in new_data.itertuples() if
             x[1:4] in joint_tuples]
     result_changes = list(set(joint_new)-set(joint_current))
+    
     return (indices_to_insert,indices_to_delete,result_changes)
     
 def _match_to_tuple_index(x, tuple_list):
@@ -580,6 +526,12 @@ def write_new_doc(dfs, campus, config, debug):
         print('--Formatting (AppsScript) completed in {:.2f} seconds'.format(
             time()-t0), flush=True)
 
+    ## Third, add formula columns to the efc tab that require award references
+    googleapi.call_script_service(
+        {"function": "doEFCSecondPass",
+         "parameters": [new_key, efc_sheet_title],
+         }
+    )
 
     # Finally, return the new key for stashing to the key file
     return new_key

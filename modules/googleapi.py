@@ -53,8 +53,7 @@ def get_drive_service(credentials=None):
     """
     if not credentials:
         credentials = get_credentials()
-    http = credentials.authorize(httplib2.Http())
-    service = discovery.build('drive', DRIVE_V, http=http)
+    service = discovery.build('drive', DRIVE_V, credentials=credentials)
     return service
 
 def move_spreadsheet_and_share(s_id, folder, credentials=None):
@@ -95,8 +94,7 @@ def call_script_service(request, credentials=None, service=None):
     if not service:
         if not credentials:
             credentials = get_credentials()
-        http = credentials.authorize(httplib2.Http())
-        service = discovery.build('script', SCRIPT_V, http=http)
+        service = discovery.build('script', SCRIPT_V, credentials=credentials)
     
     try:
         request["devMode"]="true" #runs last save instead of last deployed

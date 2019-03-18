@@ -114,3 +114,4 @@ live_backups/*
 output_reports/*
 current_applications*.csv
 current_students*.csv
+.vscode

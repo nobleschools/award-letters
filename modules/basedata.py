@@ -19,9 +19,9 @@ def _get_final_result(x):
             return 'CHOICE!'
         else:
             return 'Accepted!'
-    elif waitlisted: # will be zero unless 1 or 1.0
+    elif (waitlisted == 1) | (waitlisted == '1'):
         return 'Waitlist'
-    elif deferred: # will be zero unless 1 or 1.0
+    elif (deferred == 1) | (deferred == '1'):
         return 'Deferred'
     elif stage == 'pending':
         return 'Pending'
