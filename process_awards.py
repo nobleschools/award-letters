@@ -4,18 +4,18 @@
    containing award letters"""
 
 import argparse
-import pandas as pd
 
-from modules import filework #Works with csv and yaml inputs
-from modules import basedata #Creates "clean" tables for Google Docs
-from modules import gdocwork #Works with the Google Docs
-from modules import excelreports #creates Excel reports for a campus
+from modules import filework  # Works with csv and yaml inputs
+from modules import basedata  # Creates "clean" tables for Google Docs
+from modules import gdocwork  # Works with the Google Docs
+from modules import excelreports  # creates Excel reports for a campus
+
 
 def all_main(settings_file, mode, campus, debug, skip):
     """Meta function to call the below in series, looping through campuses"""
     config = filework.process_config(settings_file, campus)
     skiplist = skip.split(sep=',') if skip else []
-    
+
     for local_campus in config['campus_list']:
         if local_campus not in skiplist:
             if debug:
@@ -32,29 +32,30 @@ def main(settings_file, mode, campus, debug):
     2. Processes file sources and then pushes to Google Docs:
       a. If no Google Docs, yet, combines roster and applications to make
          a starting point
-      *b. If Docs exist, first reads them and then updates them based on any
+      b. If Docs exist, first reads them and then updates them based on any
          necessary changes from the roster and applications
     *3. Optionally, create Excel/PDF reports for each campus
 
-    *Note that the processing includes pushing the Tuition/Room&Board to other
-    records if it has been consistently applied across all campuses
     **Note that the * items are not yet implemented
     """
     # First read the settings file
-    if mode in ['all', 'save', 'make_new', 'push_local', 'report','combine',
-                'refresh_decisions']:
+    if mode in ['all', 'save', 'make_new', 'push_local', 'report',
+                'combine', 'refresh_decisions']:
         config = filework.process_config(settings_file, campus)
 
     # Grab csv inputs unless we're only saving the gdocs to a file
-    if mode in ['all', 'make_new', 'push_local','report','refresh_decisions']:
+    if mode in ['all', 'make_new', 'push_local', 'report',
+                'refresh_decisions']:
         dfs = filework.read_dfs(config, debug)
     else:
-        dfs = {'key':filework.read_doclist(config['key_file'])}
+        dfs = {'key': filework.read_doclist(config['key_file'])}
 
     # Add calculated fields to roster files
-    if mode in ['all', 'make_new', 'push_local','report','refresh_decisions']:
-        dfs['ros'] = basedata.add_strat_and_grs(dfs['ros'],dfs['strat'],
-            dfs['target'], dfs['sattoact'],campus,debug)
+    if mode in ['all', 'make_new', 'push_local', 'report',
+                'refresh_decisions']:
+        dfs['ros'] = basedata.add_strat_and_grs(
+            dfs['ros'], dfs['strat'],
+            dfs['target'], dfs['sattoact'], campus, debug)
 
     # These are the "blank" tables that don't yet have any award info
     # will add award and efc to the dfs dict
@@ -72,9 +73,9 @@ def main(settings_file, mode, campus, debug):
         filework.save_live_dfs(dfs, campus, config, debug)
 
     # Merge Google Docs info and write back to Google Docs
-    ## Just the presence of rows (don't overwrite values)
+    #  Just the presence of rows (don't overwrite values)
     if mode in ['all', 'push_local']:
-        if (('live_award' not in dfs.keys()) or ('live_efc' not in dfs.keys())):
+        if (('live_award' not in dfs.keys()) or('live_efc' not in dfs.keys())):
             filework.read_local_live_data(dfs, campus, config, debug)
 
         gdocwork.sync_doc_rows(dfs, campus, config, debug)
@@ -93,14 +94,14 @@ def main(settings_file, mode, campus, debug):
 
     # Update the Decisions tab (do after refreshing the award data tab)
     if mode in ['all', 'refresh_decisions']:
-        if (('live_award' not in dfs.keys()) or ('live_efc' not in dfs.keys())):
+        if (('live_award' not in dfs.keys()) or('live_efc' not in dfs.keys())):
             filework.read_local_live_data(dfs, campus, config, debug)
 
         gdocwork.refresh_decisions(dfs, campus, config, debug)
 
     # Generate reports
     if mode in ['all', 'report']:
-        if (('live_award' not in dfs.keys()) or ('live_efc' not in dfs.keys())):
+        if (('live_award' not in dfs.keys()) or('live_efc' not in dfs.keys())):
             filework.read_local_live_data(dfs, campus, config, debug)
         excelreports.create_excel(dfs, campus, config, debug)
 
@@ -108,29 +109,34 @@ def main(settings_file, mode, campus, debug):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Maintain and process awards')
 
-    parser.add_argument('-s', '--settings',
-            dest='settings_file', action='store',
-            help='Name/path of yaml file with detailed settings',
-            default='settings/settings.yaml')
+    parser.add_argument(
+        '-s', '--settings',
+        dest='settings_file', action='store',
+        help='Name/path of yaml file with detailed settings',
+        default='settings/settings.yaml')
 
-    parser.add_argument('-ca', '--campus',
-            dest='campus', action='store',
-            help='Single campus name (default "All")',
-            default='All')
-            
-    parser.add_argument('-k', '--skip',
-            dest='skip', action='store',
-            help='Campus(es) to skip for an "All" call',
-            default='')
+    parser.add_argument(
+        '-ca', '--campus',
+        dest='campus', action='store',
+        help='Single campus name (default "All")',
+        default='All')
 
-    parser.add_argument('-q', '--quiet',
-            dest='debug', action='store_false', default=True,
-            help='Suppress status messages during report creation')
+    parser.add_argument(
+        '-k', '--skip',
+        dest='skip', action='store',
+        help='Campus(es) to skip for an "All" call',
+        default='')
 
-    parser.add_argument('-m', '--mode',
+    parser.add_argument(
+        '-q', '--quiet',
+        dest='debug', action='store_false', default=True,
+        help='Suppress status messages during report creation')
+
+    parser.add_argument(
+        '-m', '--mode',
         dest='mode', action='store',
-        help='Function to execute [all/save/combine/make_new/'+
-                                 'push_local/refresh_decisions/report]',
+        help='Function to execute [all/save/combine/make_new/' +
+             'push_local/refresh_decisions/report]',
         default='all')
 
     args = parser.parse_args()
@@ -138,8 +144,7 @@ if __name__ == '__main__':
     if args.campus == 'All' and args.mode != 'combine':
         # Special meta_function to loop through all
         all_main(args.settings_file, args.mode, args.campus, args.debug,
-            args.skip)
+                 args.skip)
     else:
         campus = 'All' if args.mode == 'combine' else args.campus
         main(args.settings_file, args.mode, campus, args.debug)
-
