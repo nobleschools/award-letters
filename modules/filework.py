@@ -10,6 +10,7 @@ import yaml
 import csv
 import pandas as pd
 
+
 def process_config(settings_file, campus):
     """Returns a dict of simple keyword configurations based on what
     was in the yaml file and the specific campus"""
@@ -52,23 +53,27 @@ def process_config(settings_file, campus):
 
     return config
 
+
 def safe2int(x):
     '''converts to int if possible, otherwise is a string'''
     try:
         return int(x)
-    except:
+    except BaseException:
         return x
+
 
 def safe2f(x):
     '''converts to float if possible, otherwise is a string'''
     try:
         return float(x)
-    except:
+    except BaseException:
         return x
+
 
 def p2f(x):
     '''converts percent string to float number'''
     return None if x == 'N/A' else float(x.strip('%'))/100
+
 
 def save_live_dfs(dfs, campus, config, debug):
     """Takes the current live_ keyed dataframes and saves them to the live
@@ -84,34 +89,37 @@ def save_live_dfs(dfs, campus, config, debug):
 
     for key in dfs_to_save:
         filename = config['live_backup_prefix']+'-'+campus+'-'+key+'.csv'
-        full_path = os.path.join(config['live_backup_folder'],filename)
+        full_path = os.path.join(config['live_backup_folder'], filename)
         # If the file already exists, we'll backup to the archive directory
         if os.path.isfile(full_path):
-            archive_path = os.path.join(config['live_archive_folder'],filename)
+            archive_path = os.path.join(config['live_archive_folder'],
+                                        filename)
             shutil.copy(full_path, archive_path)
 
         # We have a special index label to preserve for the efc table only
         index_label = 'StudentID' if key in ['efc',
-                                        'decision'] else 'DefaultIndex'
+                                             'decision'] else 'DefaultIndex'
         dfs['live_'+key].to_csv(full_path, index_label=index_label)
+
 
 def read_local_live_data(dfs, campus, config, debug):
     '''Loads the live data (recently read from the Google Doc) to the file
     into the live dataframes'''
     if debug:
-        print('Reading local version of live dataframes',flush=True)
+        print('Reading local version of live dataframes', flush=True)
     for key in ['efc', 'award', 'decision']:
         filename = config['live_backup_prefix']+'-'+campus+'-'+key+'.csv'
-        full_path = os.path.join(config['live_backup_folder'],filename)
+        full_path = os.path.join(config['live_backup_folder'], filename)
         if os.path.isfile(full_path):
-            if key in ['efc','decision']:
-                dfs['live_'+key] = pd.read_csv(full_path,index_col=0)
+            if key in ['efc', 'decision']:
+                dfs['live_'+key] = pd.read_csv(full_path, index_col=0)
             else:
-                dfs['live_'+key] = pd.read_csv(full_path,index_col=False)
-                dfs['live_'+key].drop(['DefaultIndex'],axis=1,inplace=True)
+                dfs['live_'+key] = pd.read_csv(full_path, index_col=False)
+                dfs['live_'+key].drop(['DefaultIndex'], axis=1, inplace=True)
         else:
             if debug:
                 print('{} does not exist'.format(full_path))
+
 
 def combine_all_local_files(dfs, config, debug):
     """Runs through the list of all campuses and combines to three
@@ -122,7 +130,7 @@ def combine_all_local_files(dfs, config, debug):
         print(config['campus_list'])
 
     big_df = {}
-    big_df['live_efc'] = None #This will be empty for the first pass
+    big_df['live_efc'] = None  # This will be empty for the first pass
     big_df['live_award'] = None
     big_df['live_decision'] = None
 
@@ -139,7 +147,6 @@ def combine_all_local_files(dfs, config, debug):
                 else:
                     big_df[key] = dfs[key]
                 dfs.pop(key)
-    
 
     # Save
     for key in ['efc', 'award', 'decision']:
@@ -148,7 +155,7 @@ def combine_all_local_files(dfs, config, debug):
             these_fields = config['live_'+key+'_fields']
             big_df['live_'+key] = big_df['live_'+key][these_fields]
             filename = config['live_backup_prefix']+'-ALL-'+key+'.csv'
-            full_path = os.path.join(config['live_backup_folder'],filename)
+            full_path = os.path.join(config['live_backup_folder'], filename)
             # If the file already exists, we'll backup to the archive directory
             if os.path.isfile(full_path):
                 archive_path = os.path.join(config['live_archive_folder'],
@@ -156,8 +163,8 @@ def combine_all_local_files(dfs, config, debug):
                 shutil.copy(full_path, archive_path)
 
             # We have a special index label to preserve for these tables
-            index_label = 'StudentID' if key in ['efc',
-                                                'decision'] else 'DefaultIndex'
+            index_label = 'StudentID' if key in [
+                'efc', 'decision'] else 'DefaultIndex'
             big_df['live_'+key].to_csv(full_path, index_label=index_label)
 
 
@@ -165,55 +172,60 @@ def read_standard_csv(fn):
     """
     Reads an input file and returns a DataFrame with first column as index
     """
-    df = pd.read_csv(fn, index_col=0, na_values=['N/A',''])
+    df = pd.read_csv(fn, index_col=0, na_values=['N/A', ''])
     return df
+
 
 def read_apps(fn, cols):
     """
     Reads the applications file into a DataFrame, using the correct formatting
     for special columns; is passed a list of columns to pay attention to
     """
-    df = pd.read_csv(fn,na_values=[''], encoding='cp1252', usecols=cols,
-            converters={
-                'hs_student_id':safe2int,
-                'NCES':safe2int})
+    df = pd.read_csv(fn, na_values=[''], encoding='cp1252', usecols=cols,
+                     converters={
+                         'hs_student_id': safe2int,
+                         'NCES': safe2int})
     return df
+
 
 def read_bumplist(fn):
     """
     Reads the bump list into a DataFrame with dummy index
     """
-    df = pd.read_csv(fn, encoding='cp1252',converters={
-                    'SID':safe2int,
-                    'NCESid':safe2int})
+    df = pd.read_csv(fn, encoding='cp1252', converters={
+                    'SID': safe2int,
+                    'NCESid': safe2int})
     return df
+
 
 def read_roster(fn, cols):
     """
     Reads the roster file into a DataFrame, using the correct formatting
     for special columns; is passed a list of columns to use
     """
-    df = pd.read_csv(fn, index_col='StudentID', na_values=['N/A',''],
-            usecols=cols,
-            encoding='cp1252',converters={
-                    'EFC':safe2int,
-                    'ACT':safe2int,
-                    'SAT':safe2int,
-                    'GPA':safe2f,
-                    'StudentID':safe2int})
+    df = pd.read_csv(fn, index_col='StudentID', na_values=['N/A', ''],
+                     usecols=cols,
+                     encoding='cp1252', converters={
+                        'EFC': safe2int,
+                        'ACT': safe2int,
+                        'SAT': safe2int,
+                        'GPA': safe2f,
+                        'StudentID': safe2int})
     return df
+
 
 def read_colleges(fn):
     """
     Reads the colleges file into a DataFrame, using the correct formatting
     for special columns
     """
-    df = pd.read_csv(fn,na_values=['N/A'], encoding='cp1252', index_col=0,
-            converters={
-                'UNITID':safe2int,
-                'Adj6yrGrad_All':p2f,
-                'Adj6yrGrad_AA_Hisp':p2f})
+    df = pd.read_csv(fn, na_values=['N/A'], encoding='cp1252', index_col=0,
+                     converters={
+                         'UNITID': safe2int,
+                         'Adj6yrGrad_All': p2f,
+                         'Adj6yrGrad_AA_Hisp': p2f})
     return df
+
 
 def save_csv_from_table(fn, folder, list_of_lists):
     """
@@ -225,10 +237,11 @@ def save_csv_from_table(fn, folder, list_of_lists):
     long_fn = os.path.join(folder, fn)
     outf = open(long_fn, 'wt', encoding='utf-8')
     writer = csv.writer(outf, delimiter=',', quoting=csv.QUOTE_MINIMAL,
-            lineterminator='\n')
+                        lineterminator='\n')
     for row in list_of_lists:
         writer.writerow(row)
     outf.close()
+
 
 def read_doclist(fn):
     """
@@ -240,34 +253,37 @@ def read_doclist(fn):
     else:
         return pd.read_csv(fn, index_col=0)
 
+
 def save_to_doclist(fn, campus, key):
     """
     Saves the passed campus and key to the doclist csv
     """
     if not os.path.exists(fn):
-        df = pd.DataFrame({'ss_key':key}, index=[campus])
+        df = pd.DataFrame({'ss_key': key}, index=[campus])
     else:
         df = pd.read_csv(fn, index_col=0)
-        df.loc[campus,'ss_key'] = key
+        df.loc[campus, 'ss_key'] = key
 
     df.to_csv(fn, index_label='Campus')
+
 
 def give_campus(x, ref_df):
     """Apply function to lookup the name of the campus from the SchoolID"""
     return ref_df.loc[x][0]
 
+
 def give_table_value(x, ref_df, field):
     """Apply function to lookup the value of a field from the student number"""
     return ref_df.loc[x, field]
+
 
 def read_dfs(config, debug):
     """Master function for reading input data files based on config input.
     Returns a dict of dfs"""
     if debug:
         print('Reading configuration inputs', flush=True)
-    
+
     dfs = {}
-    
     dfs['key'] = read_doclist(config['key_file'])
     dfs['app'] = read_apps(config['current_applications'],
                            config['app_fields'])
@@ -279,5 +295,3 @@ def read_dfs(config, debug):
     dfs['sattoact'] = read_standard_csv(config['sattoact'])
     dfs['bump_list'] = read_bumplist(config['bump_list'])
     return dfs
-
-

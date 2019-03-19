@@ -1,7 +1,6 @@
 #!python3
 
 """Module file for all interaction with Google API"""
-import httplib2
 import os
 
 from apiclient import discovery
@@ -24,6 +23,7 @@ SCRIPT_ID = 'M3ZRRi0AvnjoCeQzL3JszW3d8W73qGbVI'
 SCRIPT_V = 'v1'
 DRIVE_V = 'v3'
 
+
 def get_credentials():
     """Gets valid user credentials from storage.
 
@@ -44,8 +44,9 @@ def get_credentials():
         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
         flow.user_agent = APPLICATION_NAME
         credentials = tools.run_flow(flow, store)
-        print('Storing credentials to '+ credential_path)
+        print('Storing credentials to ' + credential_path)
     return credentials
+
 
 def get_drive_service(credentials=None):
     """
@@ -55,6 +56,7 @@ def get_drive_service(credentials=None):
         credentials = get_credentials()
     service = discovery.build('drive', DRIVE_V, credentials=credentials)
     return service
+
 
 def move_spreadsheet_and_share(s_id, folder, credentials=None):
     """
@@ -95,11 +97,12 @@ def call_script_service(request, credentials=None, service=None):
         if not credentials:
             credentials = get_credentials()
         service = discovery.build('script', SCRIPT_V, credentials=credentials)
-    
+
     try:
-        request["devMode"]="true" #runs last save instead of last deployed
-        response = service.scripts().run(body=request,
-                scriptId=SCRIPT_ID).execute()
+        request["devMode"] = "true"  # runs last save instead of last deployed
+        response = service.scripts().run(
+            body=request,
+            scriptId=SCRIPT_ID).execute()
 
         if 'error' in response:
             # The API executes, but the script returned an error.
@@ -116,7 +119,7 @@ def call_script_service(request, credentials=None, service=None):
                 print('Script error stacktrace:')
                 for trace in error['scriptStackTraceElements']:
                     print('\t{1}: {0}'.format(trace['function'],
-                                            trace['lineNumber']))
+                          trace['lineNumber']))
             return None
         else:
             # return the response:
@@ -125,4 +128,3 @@ def call_script_service(request, credentials=None, service=None):
     except errors.HttpError as e:
         # The API encountered a problem before the script started executing.
         print(e.content)
-

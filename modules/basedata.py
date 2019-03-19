@@ -1,12 +1,12 @@
 #!python3
-
-import numpy as np
-import pandas as pd
-
 """
 Module for working with raw csv inputs and creating a 'clean' set of tables
 to push Google Docs (before adding what's already in those docs
 """
+
+import numpy as np
+import pandas as pd
+
 
 # The following functions are all used to add calculations to the main table
 def _get_final_result(x):
@@ -58,9 +58,10 @@ def _get_sat_translation(x, lookup_df):
     Lookup table has index of SAT with value of ACT'''
     sat = x
     if np.isreal(sat):
-        if sat in lookup_df.index: # it's an SAT value in the table
-            return lookup_df.loc[sat,'ACT']
-    return np.nan # default if not in table or not a number
+        if sat in lookup_df.index:  # it's an SAT value in the table
+            return lookup_df.loc[sat, 'ACT']
+    return np.nan  # default if not in table or not a number
+
 
 def _get_act_max(x):
     ''' Returns the max of two values if both are numbers, otherwise
@@ -77,36 +78,40 @@ def _get_act_max(x):
         else:
             return np.nan
 
-def _get_strategies(x,lookup_df):
+
+def _get_strategies(x, lookup_df):
     '''Apply function for calculating strategies based on gpa and act using the
     lookup table (mirrors Excel equation for looking up strategy'''
     gpa, act = x
     if np.isreal(gpa) and np.isreal(act):
         lookup = '{:.1f}:{:.0f}'.format(
-                max(np.floor(gpa*10)/10,1.5), max(act, 12))
-        return lookup_df['Strategy'].get(lookup,np.nan)
+                max(np.floor(gpa*10)/10, 1.5), max(act, 12))
+        return lookup_df['Strategy'].get(lookup, np.nan)
     else:
         return np.nan
+
 
 def _safe2int(x):
     try:
         return int(x+20)
-    except:
+    except BaseException:
         return x
+
 
 def _get_gr_target(x, lookup_strat, goal_type):
     '''Apply function to get the target or ideal grad rate for student'''
     strat, gpa, efc, race = x
     # 2 or 3 strategies are split by being above/below 3.0 GPA line
     # First we identify those and then adjust the lookup index accordingly
-    special_strats = [int(x[0]) for x in lookup_strat.index if x[-1]=='+']
+    special_strats = [int(x[0]) for x in lookup_strat.index if x[-1] == '+']
     if np.isreal(gpa) and np.isreal(strat):
         # First define the row in the lookup table
         strat_str = '{:.0f}'.format(strat)
         if strat in special_strats:
             lookup = strat_str + '+' if gpa >= 3.0 else strat_str + '<'
         else:
-            lookup = strat_str 
+            lookup = strat_str
+
         # Then define the column in the lookup table
         if efc == -1:
             column = 'minus1_' + goal_type
@@ -114,7 +119,7 @@ def _get_gr_target(x, lookup_strat, goal_type):
             column = 'W/A_' + goal_type
         else:
             column = 'AA/H_' + goal_type
-        return lookup_strat[column].get(lookup,np.nan)
+        return lookup_strat[column].get(lookup, np.nan)
     else:
         return np.nan
 
@@ -127,23 +132,24 @@ def add_strat_and_grs(df, strat_df, target_df, sattoact_df, campus, debug):
     """
     df = df.copy()
     if campus != 'All':
-        df = df[df['Campus']==campus]
+        df = df[df['Campus'] == campus]
     df['local_sat_in_act'] = df['SAT'].apply(_get_sat_translation,
-            args=(sattoact_df,))
-    df['local_act_max'] = df[['ACT','local_sat_in_act']].apply(
+                                             args=(sattoact_df,))
+    df['local_act_max'] = df[['ACT', 'local_sat_in_act']].apply(
             _get_act_max, axis=1)
-    df['Stra-tegy'] = df[['GPA','local_act_max']].apply(_get_strategies,
-            axis=1, args=(strat_df,))
+    df['Stra-tegy'] = df[['GPA', 'local_act_max']].apply(
+        _get_strategies, axis=1, args=(strat_df,))
     df['Target Grad Rate'] = df[
-            ['Stra-tegy','GPA','EFC','Race/ Eth']].apply(
-            _get_gr_target, axis=1, args=(target_df,'target'))
+            ['Stra-tegy', 'GPA', 'EFC', 'Race/ Eth']].apply(
+            _get_gr_target, axis=1, args=(target_df, 'target'))
     df['Ideal Grad Rate'] = df[
-            ['Stra-tegy','GPA','EFC','Race/ Eth']].apply(
-            _get_gr_target, axis=1, args=(target_df,'ideal'))
- 
+            ['Stra-tegy', 'GPA', 'EFC', 'Race/ Eth']].apply(
+            _get_gr_target, axis=1, args=(target_df, 'ideal'))
+
     if debug:
         print('Total roster length of {}.'.format(len(df)))
     return df
+
 
 def make_clean_gdocs(dfs, config, debug):
     """
@@ -162,14 +168,13 @@ def make_clean_gdocs(dfs, config, debug):
 
     if debug:
         print('Creating "Blank" Google Docs tables from source csvs',
-                flush=True)
+              flush=True)
 
-    #######################################################33
+    # #####################################################
     # First do the (simpler) EFC tab, which is just a combination of
-
     # direct columns from the roster plus some blank columns
     efc_pull_fields = [field for field in efc_tab_fields if
-                        field in ros_df.columns]
+                       field in ros_df.columns]
 
     # the line below skips the first column because it is assumed to be
     # the index
@@ -178,7 +183,7 @@ def make_clean_gdocs(dfs, config, debug):
     efc_df = ros_df[efc_pull_fields]
     efc_df = efc_df.reindex(columns=efc_df.columns.tolist() + efc_blank_fields)
 
-    #######################################################33
+    # #####################################################
     # Now do the more complicated awards tab
     current_students = list(efc_df.index)
     award_df = app_df[app_df['hs_student_id'].isin(current_students)].copy()
@@ -186,9 +191,9 @@ def make_clean_gdocs(dfs, config, debug):
     # Do all of the lookups from the roster table:
     for dest, source, default in (
             ('lf', 'LastFirst', 'StudentMissing'),
-            ('tgr','Target Grad Rate', np.nan),
-            ('igr','Ideal Grad Rate', np.nan),
-            ('race','Race/ Eth', 'N/A'),
+            ('tgr', 'Target Grad Rate', np.nan),
+            ('igr', 'Ideal Grad Rate', np.nan),
+            ('race', 'Race/ Eth', 'N/A'),
             ):
         award_df[dest] = award_df['hs_student_id'].apply(
                 lambda x: ros_df[source].get(x, default))
@@ -197,25 +202,25 @@ def make_clean_gdocs(dfs, config, debug):
     for dest, source, default in (
             ('cname', 'INSTNM', 'NotAvail'),
             ('barrons', 'SimpleBarrons', 'N/A'),
-            ('local','Living', 'Campus'),
-            ('sixyrgr','Adj6yrGrad_All', np.nan),
-            ('sixyrgraah','Adj6yrGrad_AA_Hisp', np.nan),
+            ('local', 'Living', 'Campus'),
+            ('sixyrgr', 'Adj6yrGrad_All', np.nan),
+            ('sixyrgraah', 'Adj6yrGrad_AA_Hisp', np.nan),
             ):
         award_df[dest] = award_df['NCES'].apply(
                 lambda x: college_df[source].get(x, default))
 
     # Cleanup from college table for missing values
-    award_df['cname'] = award_df[['cname','collegename']].apply(
+    award_df['cname'] = award_df[['cname', 'collegename']].apply(
             lambda x: x[1] if x[0] == 'NotAvail' else x[0], axis=1)
     award_df['barrons'] = award_df['barrons'].apply(
             _make_barrons_translation)
-    award_df['sixyrfinal'] = award_df[['race','sixyrgr','sixyrgraah']].apply(
+    award_df['sixyrfinal'] = award_df[['race', 'sixyrgr', 'sixyrgraah']].apply(
             lambda x: x[2] if x[0] in ['B', 'H'] else x[1], axis=1)
 
     # Other interpreted/calculated values:
-    award_df['final_result'] = award_df[['result_code','attending','waitlisted',
-                                         'deferred','stage','type']
-                ].apply(_get_final_result, axis=1)
+    award_df['final_result'] = award_df[
+        ['result_code', 'attending', 'waitlisted', 'deferred', 'stage', 'type']
+        ].apply(_get_final_result, axis=1)
 
     # Calculated or blank columns (we'll push the calculations with AppsScript)
     for f in [
@@ -232,15 +237,15 @@ def make_clean_gdocs(dfs, config, debug):
             'Work Study (enter for comparison if desired)',
             'Award',
             ]:
-        award_df[f]=''
+        award_df[f] = ''
 
     # Still need to double up home colleges for home/away rows
-    both_rows = award_df[award_df['local']=='Both'].copy() #will replicate these
-    # 'Both' rows become 'Home' here and the replicants will be Away
-    award_df['cname'] = award_df[['cname','local']].apply(
-            lambda x: x[0] + ('' if x[1]=='Campus' else '--At Home'), axis=1)
+    both_rows = award_df[award_df['local'] == 'Both'].copy()
+    # 'Both' rows become 'Home' here and the replicants (above) will be Away
+    award_df['cname'] = award_df[['cname', 'local']].apply(
+            lambda x: x[0] + ('' if x[1] == 'Campus' else '--At Home'), axis=1)
     award_df['local'] = award_df['local'].apply(
-            lambda x: 'Home' if x=='Both' else x)
+            lambda x: 'Home' if x == 'Both' else x)
     award_df['Unique'] = 1
     # these are the duplicate rows
     both_rows['local'] = 'Campus'
@@ -253,18 +258,18 @@ def make_clean_gdocs(dfs, config, debug):
 
     # Rename labels to match what will be in the doc
     mapper = {
-            'lf': 'Student', 
+            'lf': 'Student',
             'tgr': 'Target Grad Rate',
             'igr': 'Ideal Grad Rate',
             'cname': 'College/University',
-            'barrons': 'Selectivity\n'+
-                       '1=Most+\n'+
-                       '2=Most\n'+
-                       '3=Highly\n'+
-                       '4=Very\n'+
-                       '5=Competitive\n'+
-                       '6=Less\n'+
-                       '7=Non\n'+
+            'barrons': 'Selectivity\n' +
+                       '1=Most+\n' +
+                       '2=Most\n' +
+                       '3=Highly\n' +
+                       '4=Very\n' +
+                       '5=Competitive\n' +
+                       '6=Less\n' +
+                       '7=Non\n' +
                        '8=2 year',
             'final_result': 'Result (from Naviance)',
             'sixyrfinal': '6-Year Minority Grad Rate',
@@ -273,20 +278,20 @@ def make_clean_gdocs(dfs, config, debug):
             'local': 'Home/Away',
             }
     use_mapper = {key: value for key, value in mapper.items() if
-                            value in award_fields}
+                  value in award_fields}
     award_df.rename(columns=use_mapper, inplace=True)
 
     # Final reduce the table to just what's going in the Google Doc
     award_df = award_df[award_fields]
 
     # Sort the table based on config file
-    #award_sort is a list with the right fields
+    # award_sort is a list with the right fields
     if award_sort[1] == 'College/University':
         sort_order = [True, True]
     else:
-        sort_order = [True, False,True]
+        sort_order = [True, False, True]
 
-    award_df.sort_values(by=award_sort,ascending=sort_order, inplace=True)
+    award_df.sort_values(by=award_sort, ascending=sort_order, inplace=True)
 
     dfs['award'] = award_df
     dfs['efc'] = efc_df
