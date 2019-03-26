@@ -2,6 +2,7 @@
 
 """Module file for all interaction with Google API"""
 import os
+import socket
 
 from apiclient import discovery
 from oauth2client import client
@@ -18,6 +19,7 @@ SCOPES = [
           'https://www.googleapis.com/auth/spreadsheets',
           ]
 CLIENT_SECRET_FILE = 'client_secret.json'
+DEFAULT_TIMEOUT = 300.0  # 5 minutes total timeout
 APPLICATION_NAME = 'Award Letter Trackers'
 SCRIPT_ID = 'M3ZRRi0AvnjoCeQzL3JszW3d8W73qGbVI'
 SCRIPT_V = 'v1'
@@ -93,6 +95,7 @@ def call_script_service(request, credentials=None, service=None):
     Handles errors in the function, but returns the request response or
     a None response if not available
     """
+    socket.setdefaulttimeout(DEFAULT_TIMEOUT)
     if not service:
         if not credentials:
             credentials = get_credentials()

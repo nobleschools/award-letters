@@ -323,17 +323,18 @@ def sync_doc_rows(dfs, campus, config, debug):
     award_header_row = config['award_header_row']
 
     # First the EFC tab
-    ## Make a comparison of new rows and rows to delete
+    #  Make a comparison of new rows and rows to delete
     efc_indices_to_insert, efc_indices_to_delete = _do_table_diff(
             set(live_efc_df.index), set(new_efc_df.index))
 
     # Get parameters for working with the Google Doc
-    doc_key = key_df.loc[campus,'ss_key']
+    doc_key = key_df.loc[campus, 'ss_key']
 
-    ## Push the new rows to the doc
+    #  Push the new rows to the doc
     if efc_indices_to_insert:
         # Get the full rows of data to add
-        efc_to_add_df = new_efc_df[new_efc_df.index.isin(efc_indices_to_insert)]
+        efc_to_add_df = new_efc_df[
+            new_efc_df.index.isin(efc_indices_to_insert)]
 
         # Now convert it to a list of headers and a list of lists for data
         efc_to_add_header = list(efc_to_add_df.columns)
@@ -345,11 +346,11 @@ def sync_doc_rows(dfs, campus, config, debug):
             efc_list_of_list_data.append(this_row)
         # Now replace the n_as:
         efc_list_of_list_data = [['' if pd.isnull(x) else x for x in row]
-                                             for row in efc_list_of_list_data]
+                                 for row in efc_list_of_list_data]
         
         if debug:
             print('EFC tab, adding {} rows...'.format(
-                len(efc_list_of_list_data)),end='',flush=True)
+                len(efc_list_of_list_data)), end='', flush=True)
         t0 = time()
         a_response = googleapi.call_script_service(
                 {"function": "insertEFCStudentRows",
@@ -417,7 +418,7 @@ def sync_doc_rows(dfs, campus, config, debug):
                  })
         if debug:
             print('done in {:.2f} seconds'.format(time()-t0), flush=True)
-            #print(a_response, flush=True)
+            # print(a_response, flush=True)
 
     elif result_changes:
         if debug:
@@ -431,6 +432,7 @@ def sync_doc_rows(dfs, campus, config, debug):
                  })
         if debug:
             print('done in {:.2f} seconds'.format(time()-t0), flush=True)
+            print('Total of {} actual changes'.format(int(a_response)))
 
 
 
