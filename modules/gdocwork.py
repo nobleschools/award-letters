@@ -11,6 +11,8 @@ import numpy as np
 from modules import googleapi
 from modules import filework
 
+MAX_ROWS_ADD = 60
+
 
 def safefloat(x):
     """Converts to a float if possible"""
@@ -227,8 +229,8 @@ def refresh_decisions(dfs, campus, config, debug):
     s_df = s_df[['LastFirst', 'Student TGR']]
     s_df['Student TGR'] = s_df['Student TGR'].fillna('TBD')
 
-    a_df.to_csv('foo_award.csv')
-    s_df.to_csv('foo_s.csv')
+    # a_df.to_csv('foo_award.csv')
+    # s_df.to_csv('foo_s.csv')
 
     # Second, create lists of lists for the actual tables
     do_table = [['student', 'college', 'Result', 'pgr', 'out_of_pocket',
@@ -270,8 +272,8 @@ def refresh_decisions(dfs, campus, config, debug):
                        current_row + num_rows-1, this_choice, student_tgr])
         current_row += num_rows  # ready for the next student
 
-    filework.save_csv_from_table('temp_do.csv', '.', do_table)
-    filework.save_csv_from_table('temp_d.csv', '.', d_table)
+    # filework.save_csv_from_table('temp_do.csv', '.', do_table)
+    # filework.save_csv_from_table('temp_d.csv', '.', d_table)
 
     ###################################################################
     #  Second, push the starter tables to the doc where the AppsScript
@@ -408,17 +410,35 @@ def sync_doc_rows(dfs, campus, config, debug):
         if debug:
             print('Awards tab, adding {} rows...'.format(
                 len(award_list_of_list_data)),end='', flush=True)
-        t0 = time()
-        a_response = googleapi.call_script_service(
-                {"function": "insertAwardStudentRows",
-                 "parameters": [doc_key, award_sheet_title, result_changes,
-                                award_to_add_header, award_list_of_list_data,
-                                award_header_row], 
-                                
-                 })
-        if debug:
-            print('done in {:.2f} seconds'.format(time()-t0), flush=True)
-            # print(a_response, flush=True)
+        if len(award_list_of_list_data) <= MAX_ROWS_ADD:
+            t0 = time()
+            a_response = googleapi.call_script_service(
+                    {"function": "insertAwardStudentRows",
+                    "parameters": [doc_key, award_sheet_title, result_changes,
+                                    award_to_add_header, award_list_of_list_data,
+                                    award_header_row], 
+                                    
+                    })
+            if debug:
+                print('done in {:.2f} seconds'.format(time()-t0), flush=True)
+                # print(a_response, flush=True)
+        else:  # This data set is too large, so we're going to push twice
+            alold1 = award_list_of_list_data[:MAX_ROWS_ADD]
+            alold2 = award_list_of_list_data[MAX_ROWS_ADD:]
+            for alold in [alold1, alold2]:
+                t0 = time()
+                a_response = googleapi.call_script_service(
+                        {"function": "insertAwardStudentRows",
+                        "parameters": [doc_key, award_sheet_title,
+                                       result_changes, award_to_add_header,
+                                       alold, award_header_row], 
+                        })
+                if debug:
+                    print('done ({}) in {:.2f} seconds..'.format(
+                        len(alold), time()-t0), flush=True, end='')
+            if debug:
+                print('',flush=True)
+
 
     elif result_changes:
         if debug:

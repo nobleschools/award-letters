@@ -261,7 +261,7 @@ decision_header_row:
     Standard: 1
 decision_defaults: #keys are the options and values are "grad rate" for choice
     Standard:
-        'Structured non-college (e.g. Army--enter to right)': 0.1
+        'Ambitious Alternative Pathway (enter to right)': 0.17
         'No college/working': 0.0
 
 ###################################################################
