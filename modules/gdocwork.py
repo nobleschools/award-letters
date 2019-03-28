@@ -9,8 +9,6 @@ import pandas as pd
 import numpy as np
 
 from modules import googleapi
-from modules import filework
-
 MAX_ROWS_ADD = 60
 
 
@@ -349,7 +347,7 @@ def sync_doc_rows(dfs, campus, config, debug):
         # Now replace the n_as:
         efc_list_of_list_data = [['' if pd.isnull(x) else x for x in row]
                                  for row in efc_list_of_list_data]
-        
+
         if debug:
             print('EFC tab, adding {} rows...'.format(
                 len(efc_list_of_list_data)), end='', flush=True)
@@ -363,7 +361,7 @@ def sync_doc_rows(dfs, campus, config, debug):
         if debug:
             print('done in {:.2f} seconds'.format(time()-t0), flush=True)
 
-    ## Delete the rows for removal
+    #  Delete the rows for removal
     if efc_indices_to_delete:
         if debug:
             print('EFC tab, deleting {} rows...'.format(
@@ -376,24 +374,27 @@ def sync_doc_rows(dfs, campus, config, debug):
              })
         if debug:
             print('done in {:.2f} seconds'.format(time()-t0), flush=True)
-            #print(d_response, flush=True)
+            # print(d_response, flush=True)
 
     # Second the Award tab
-    ## Make a comparison of new rows and rows to delete
+    #  Make a comparison of new rows and rows to delete
     # figure out the number of error indices in live data:
-    new_award_df['NCESid'].replace(np.nan,'N/A', inplace=True) # fix for prop-
-    live_award_df['NCESid'].replace(np.nan,'N/A', inplace=True)#agating N/As
-    
+    # (The two lines below fix the problem of propagating N/As)
+    new_award_df['NCESid'].replace(np.nan, 'N/A', inplace=True)
+    live_award_df['NCESid'].replace(np.nan, 'N/A', inplace=True)
+
     award_ix_to_insert, award_ix_to_delete, result_changes = _do_table_diff_df(
-        live_award_df[['SID','NCESid','Home/Away','Result (from Naviance)']],
-        new_award_df[['SID','NCESid','Home/Away','Result (from Naviance)']],
+        live_award_df[
+            ['SID', 'NCESid', 'Home/Away', 'Result (from Naviance)']],
+        new_award_df[
+            ['SID', 'NCESid', 'Home/Away', 'Result (from Naviance)']],
         debug)
-    
-    ## Push the new rows to the doc
+
+    #  Push the new rows to the doc
     if award_ix_to_insert:
         # Get the full rows of data to add
         award_to_add_df = new_award_df[new_award_df[
-            ['SID','NCESid','Home/Away']].apply(
+            ['SID', 'NCESid', 'Home/Away']].apply(
                 _match_to_tuple_index,
                 axis=1, args=(award_ix_to_insert,))]
 
@@ -405,20 +406,20 @@ def sync_doc_rows(dfs, campus, config, debug):
 
         # Now replace the n_as:
         award_list_of_list_data = [['' if pd.isnull(x) else x for x in row]
-                                             for row in award_list_of_list_data]
-        
+                                   for row in award_list_of_list_data]
+
         if debug:
             print('Awards tab, adding {} rows...'.format(
-                len(award_list_of_list_data)),end='', flush=True)
+                len(award_list_of_list_data)), end='', flush=True)
         if len(award_list_of_list_data) <= MAX_ROWS_ADD:
             t0 = time()
             a_response = googleapi.call_script_service(
                     {"function": "insertAwardStudentRows",
-                    "parameters": [doc_key, award_sheet_title, result_changes,
-                                    award_to_add_header, award_list_of_list_data,
-                                    award_header_row], 
-                                    
-                    })
+                     "parameters": [doc_key, award_sheet_title, result_changes,
+                                    award_to_add_header,
+                                    award_list_of_list_data,
+                                    award_header_row],
+                     })
             if debug:
                 print('done in {:.2f} seconds'.format(time()-t0), flush=True)
                 # print(a_response, flush=True)
@@ -429,34 +430,31 @@ def sync_doc_rows(dfs, campus, config, debug):
                 t0 = time()
                 a_response = googleapi.call_script_service(
                         {"function": "insertAwardStudentRows",
-                        "parameters": [doc_key, award_sheet_title,
-                                       result_changes, award_to_add_header,
-                                       alold, award_header_row], 
-                        })
+                         "parameters": [doc_key, award_sheet_title,
+                                        result_changes, award_to_add_header,
+                                        alold, award_header_row],
+                         })
                 if debug:
                     print('done ({}) in {:.2f} seconds..'.format(
                         len(alold), time()-t0), flush=True, end='')
             if debug:
-                print('',flush=True)
-
+                print('', flush=True)
 
     elif result_changes:
         if debug:
             print('Awards tab, changing decision on {} rows...'.format(
-                len(result_changes)),end='', flush=True)
+                len(result_changes)), end='', flush=True)
         t0 = time()
         a_response = googleapi.call_script_service(
                 {"function": "updateAwardStatuses",
                  "parameters": [doc_key, award_sheet_title, result_changes,
-                                award_header_row], 
+                                award_header_row],
                  })
         if debug:
             print('done in {:.2f} seconds'.format(time()-t0), flush=True)
             print('Total of {} actual changes'.format(int(a_response)))
 
-
-
-    ## Delete the rows for removal
+    #  Delete the rows for removal
     if award_ix_to_delete:
         if debug:
             print('Awards tab, deleting {} rows...'.format(
@@ -468,11 +466,12 @@ def sync_doc_rows(dfs, campus, config, debug):
                             award_ix_to_delete],
              })
         if debug:
-            print('done in {:.2f} seconds'.format(time()-t0), flush=True)
-            #print(d_response, flush=True)
+            print('done ({} deleted) in {:.2f} seconds'.format(
+                int(d_response), time()-t0), flush=True)
+
 
 def write_new_doc(dfs, campus, config, debug):
-    '''Creates a new doc from scratch using the passed tables'''
+    """Creates a new doc from scratch using the passed tables"""
     # Pull out local variables:
     key_df = dfs['key']
     efc_df = dfs['efc']
@@ -482,11 +481,10 @@ def write_new_doc(dfs, campus, config, debug):
     efc_sheet_title = config['efc_tab_name']
     award_sheet_title = config['award_tab_name']
 
-
     # Only runs if there is no current doc for the campus
-    if isinstance(key_df,pd.DataFrame) and campus in key_df.index: 
+    if isinstance(key_df, pd.DataFrame) and campus in key_df.index:
         if debug:
-            print('Will not create a new doc:'+
+            print('Will not create a new doc:' +
                   ' doc already exists for this campus')
         return None
 
@@ -514,7 +512,7 @@ def write_new_doc(dfs, campus, config, debug):
         print('--Renamed and shared in {:.2f} seconds'.format(
             time()-t0), flush=True)
 
-    ## Make the EFC tab first
+    #  Make the EFC tab first
     wb = gc.open_by_key(new_key)
     ws = wb.sheet1
     t0 = time()
@@ -523,9 +521,9 @@ def write_new_doc(dfs, campus, config, debug):
         print('--Title updated in {:.2f} seconds'.format(
             time()-t0), flush=True)
     t0 = time()
-    ws = wb.worksheet(efc_sheet_title) # This line needed until gspread>=3.1.0
+    ws = wb.worksheet(efc_sheet_title)  # This line needed until gspread>=3.1.0
     _write_df_to_sheet(ws, efc_df, new_key, efc_sheet_title,
-                                            use_index='StudentID')
+                       use_index='StudentID')
     if debug:
         print('--EFC data written in {:.2f} seconds'.format(
             time()-t0), flush=True)
@@ -539,7 +537,7 @@ def write_new_doc(dfs, campus, config, debug):
         print('--Formatting (AppsScript) completed in {:.2f} seconds'.format(
             time()-t0), flush=True)
 
-    ## Make the second, awards tab
+    #  Make the second, awards tab
     t0 = time()
     ws = wb.add_worksheet(title=award_sheet_title, rows=5, cols=5)
     if debug:
@@ -559,7 +557,7 @@ def write_new_doc(dfs, campus, config, debug):
         print('--Formatting (AppsScript) completed in {:.2f} seconds'.format(
             time()-t0), flush=True)
 
-    ## Third, add formula columns to the efc tab that require award references
+    #  Third, add formula columns to the efc tab that require award references
     googleapi.call_script_service(
         {"function": "doEFCSecondPass",
          "parameters": [new_key, efc_sheet_title],
