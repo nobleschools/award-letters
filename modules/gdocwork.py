@@ -467,7 +467,8 @@ def sync_doc_rows(dfs, campus, config, debug):
              })
         if debug:
             print('done ({} deleted) in {:.2f} seconds'.format(
-                int(d_response), time()-t0), flush=True)
+                (len(d_response) if isinstance(d_response, list) else '?'),
+                time()-t0), flush=True)
 
 
 def write_new_doc(dfs, campus, config, debug):

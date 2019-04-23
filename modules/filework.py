@@ -143,7 +143,7 @@ def combine_all_local_files(dfs, config, debug):
             if key in dfs.keys():
                 dfs[key]['Campus'] = campus
                 if isinstance(big_df[key], pd.DataFrame):
-                    big_df[key] = pd.concat([big_df[key], dfs[key]])
+                    big_df[key] = pd.concat([big_df[key], dfs[key]], sort=False)
                 else:
                     big_df[key] = dfs[key]
                 dfs.pop(key)

@@ -113,7 +113,7 @@ if __name__ == '__main__':
         '-s', '--settings',
         dest='settings_file', action='store',
         help='Name/path of yaml file with detailed settings',
-        default='settings/settings.yaml')
+        default='settings/settings.yml')
 
     parser.add_argument(
         '-ca', '--campus',

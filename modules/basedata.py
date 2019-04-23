@@ -19,6 +19,8 @@ def _get_final_result(x):
             return 'CHOICE!'
         else:
             return 'Accepted!'
+    elif result_code == 'guar. transfer':
+        return 'Guar. Xfer'
     elif (waitlisted == 1) | (waitlisted == '1'):
         return 'Waitlist'
     elif (deferred == 1) | (deferred == '1'):
