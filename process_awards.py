@@ -92,12 +92,21 @@ def main(settings_file, mode, campus, debug):
     if mode in ['combine']:
         filework.combine_all_local_files(dfs, config, debug)
 
+    # Refresh live data after push_local for all
+    if mode in ['all']:
+        gdocwork.read_current_doc(dfs, campus, config, debug)
+
     # Update the Decisions tab (do after refreshing the award data tab)
     if mode in ['all', 'refresh_decisions']:
         if (('live_award' not in dfs.keys()) or('live_efc' not in dfs.keys())):
             filework.read_local_live_data(dfs, campus, config, debug)
 
         gdocwork.refresh_decisions(dfs, campus, config, debug)
+
+    # Refresh live data after refresh_decisions for all
+    if mode in ['all']:
+        gdocwork.read_current_doc(dfs, campus, config, debug)
+        filework.save_live_dfs(dfs, campus, config, debug)
 
     # Generate reports
     if mode in ['all', 'report']:

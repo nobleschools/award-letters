@@ -197,7 +197,7 @@ def refresh_decisions(dfs, campus, config, debug):
     decision_options_sheet_title = config['decision_options_tab_name']
     decision_sheet_title = config['decision_tab_name']
     decision_options_header_row = config['decision_options_header_row']
-    # decision_header_row = int(config['decision_header_row'])
+    decision_header_row = int(config['decision_header_row'])
     decision_defaults = config['decision_defaults']
     do_fds = config['decision_option_fields']
 
@@ -296,7 +296,8 @@ def refresh_decisions(dfs, campus, config, debug):
     googleapi.call_script_service(
         {"function": "refreshDecisions",
          "parameters": [doc_key, decision_sheet_title,
-                        decision_options_sheet_title, d_table],
+                        decision_options_sheet_title,
+                        d_table, decision_header_row],
          })
     if debug:
         print('done in {:.2f} seconds'.format(time()-t0), flush=True)
