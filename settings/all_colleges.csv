@@ -3,6 +3,7 @@ UNITID,INSTNM,SimpleBarrons,Adj6yrGrad_All,Adj6yrGrad_AA_Hisp,AdjACT25,AdjACT50,
 Naval Prep,United States Naval Academy Prep School,Very Competitive,57%,52%,N/A,N/A,+++,1,No,0,0,Campus
 Arrupe,Arrupe College (Loyola),Noncompetitive,50%,44%,N/A,N/A,+++,1,No,0,1,Home
 UICHonors,University of Illinois at Chicago (Honors),Highly Competitive,88%,80%,N/A,N/A,+++,1,No,1,1,Both
+DePaulHW,DePaul Harold Washington Academy,Competitive,50%,45%,N/A,N/A,+++,1,No,1,1,Home
 100663,University of Alabama at Birmingham,Competitive,53%,49%,21,24.5,?,0,No,0,0,Campus
 100690,Amridge University,Noncompetitive,29%,33%,N/A,N/A,--,0,No,0,0,Campus
 100706,University of Alabama in Huntsville,Very Competitive,48%,34%,25,28,?,0,No,0,0,Campus
@@ -4701,7 +4702,7 @@ UICHonors,University of Illinois at Chicago (Honors),Highly Competitive,88%,80%,
 460613,Brown Mackie College-San Antonio,Not available,9%,11%,N/A,N/A,---,0,No,0,0,Campus
 460677,ICPR Junior College-Manati (2 year),2 year (Noncompetitive),N/A,N/A,N/A,N/A,++/-,1,No,0,0,Campus
 460738,American Sentinel University,Not available,100%,N/A,N/A,N/A,?,0,No,0,0,Campus
-460747,Tribeca Flashpoint College,Not available,N/A,N/A,N/A,N/A,---,0,No,0,1,Home
+460747,Tribeca Flashpoint College,Not available,30%,30%,N/A,N/A,---,0,No,0,1,Home
 460756,Hawaii Medical College (2 year),2 year (Noncompetitive),N/A,N/A,N/A,N/A,---,0,No,0,0,Campus
 460774,Virginia College-Baton Rouge (2 year),2 year (Noncompetitive),N/A,N/A,N/A,N/A,---,0,No,0,0,Campus
 460783,Remington College-Heathrow Campus,Noncompetitive,42%,38%,N/A,N/A,---,0,No,0,0,Campus

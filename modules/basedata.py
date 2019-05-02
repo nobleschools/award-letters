@@ -126,6 +126,16 @@ def _get_gr_target(x, lookup_strat, goal_type):
         return np.nan
 
 
+def _make_final_gr(x):
+    """Apply function to do graduation rates"""
+    race, sixyrgr, sixyrgraah, comments = x
+    first_gr = sixyrgraah if race in ['B', 'H', 'M'] else sixyrgr
+    if comments == 'Posse':
+        return (first_gr+0.15) if first_gr < 0.7 else (1.0-(1.0-first_gr)/2)
+    else:
+        return first_gr
+
+
 # Finally, the main function that calls these
 
 def add_strat_and_grs(df, strat_df, target_df, sattoact_df, campus, debug):
@@ -216,8 +226,8 @@ def make_clean_gdocs(dfs, config, debug):
             lambda x: x[1] if x[0] == 'NotAvail' else x[0], axis=1)
     award_df['barrons'] = award_df['barrons'].apply(
             _make_barrons_translation)
-    award_df['sixyrfinal'] = award_df[['race', 'sixyrgr', 'sixyrgraah']].apply(
-            lambda x: x[2] if x[0] in ['B', 'H'] else x[1], axis=1)
+    award_df['sixyrfinal'] = award_df[['race', 'sixyrgr', 'sixyrgraah',
+                                       'comments']].apply(_make_final_gr, axis=1)
 
     # Other interpreted/calculated values:
     award_df['final_result'] = award_df[
