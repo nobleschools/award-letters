@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 
 from modules import googleapi
+from modules import filework
 MAX_ROWS_ADD = 60
 
 
@@ -270,8 +271,8 @@ def refresh_decisions(dfs, campus, config, debug):
                        current_row + num_rows-1, this_choice, student_tgr])
         current_row += num_rows  # ready for the next student
 
-    # filework.save_csv_from_table('temp_do.csv', '.', do_table)
-    # filework.save_csv_from_table('temp_d.csv', '.', d_table)
+    filework.save_csv_from_table('temp_do.csv', '.', do_table)
+    filework.save_csv_from_table('temp_d.csv', '.', d_table)
 
     ###################################################################
     #  Second, push the starter tables to the doc where the AppsScript
