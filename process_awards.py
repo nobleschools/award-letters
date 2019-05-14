@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.campus == 'All' and args.mode != 'combine':
+    if args.campus == 'All' and (args.mode not in ['combine','report']):
         # Special meta_function to loop through all
         all_main(args.settings_file, args.mode, args.campus, args.debug,
                  args.skip)

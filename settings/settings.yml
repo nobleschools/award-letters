@@ -291,6 +291,13 @@ report_award_fields: #Columns in 'Award data' tab (generally from live_award)
     - 'Student Loans offered': Student Loans offered (include all non-parent)
     - 'Work Study': Work Study (enter for comparison if desired)
 
+report_student_fields: #Columns in 'Students' tab (generally from live_efc)
+    # fields with x in the front go to the df, but not the excel
+    - Campus: var:Campus
+    - StudentID: StudentID
+    - LastFirst: LastFirst
+    - EFC: EFC
+
 report_award_formats: #Option formats to override defaults for each column
     SID:
         width: 59

@@ -42,7 +42,7 @@ def process_config(settings_file, campus):
                 'file_stem', 'efc_tab_fields', 'app_fields', 'roster_fields',
                 'live_efc_fields', 'report_award_fields',
                 'report_award_formats', 'decision_option_fields',
-                'live_decision_fields',
+                'live_decision_fields', 'report_student_fields',
                 ]:
         config[key] = cfg[key]
 
@@ -55,7 +55,7 @@ def process_config(settings_file, campus):
 
 
 def safe2int(x):
-    '''converts to int if possible, otherwise is a string'''
+    """converts to int if possible, otherwise original"""
     try:
         return int(x)
     except BaseException:
