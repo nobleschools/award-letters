@@ -13,20 +13,19 @@ from google.auth.transport.requests import Request
 from google.auth.transport.requests import AuthorizedSession
 
 
-CREDENTIAL_STORE_DIR = '.credentials'
-CREDENTIAL_STORE_FILE = 'award-letters.json'
+CREDENTIAL_STORE_DIR = ".credentials"
+CREDENTIAL_STORE_FILE = "award-letters.json"
 SCOPES = [
-          'https://www.googleapis.com/auth/drive',
-          # 'https://spreadsheets.google.com/feeds',
-          'https://www.googleapis.com/auth/spreadsheets',
-          ]
-CLIENT_SECRET_FILE = 'client_secret.json'
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/spreadsheets",
+]
+CLIENT_SECRET_FILE = "client_secret.json"
 DEFAULT_TIMEOUT = 300.0  # 5 minutes total timeout
-APPLICATION_NAME = 'Award Letter Trackers'
+APPLICATION_NAME = "Award Letter Trackers"
 SCRIPT_ID = "Mnmyh2DYQEzLuWOvbDD0zJZ76E4tkxNYa"
 # SCRIPT_ID = 'M3ZRRi0AvnjoCeQzL3JszW3d8W73qGbVI'
-SCRIPT_V = 'v1'
-DRIVE_V = 'v3'
+SCRIPT_V = "v1"
+DRIVE_V = "v3"
 
 
 def get_credentials():
@@ -43,7 +42,7 @@ def get_credentials():
     credential_path = os.path.join(CREDENTIAL_STORE_DIR, CREDENTIAL_STORE_FILE)
     credentials = None
     if os.path.exists(credential_path):
-        with open(credential_path, 'rb') as token:
+        with open(credential_path, "rb") as token:
             credentials = pickle.load(token)
 
     if not credentials or not credentials.valid:
@@ -51,10 +50,9 @@ def get_credentials():
             credentials.refresh(Request())
         else:
             secret_path = os.path.join(CREDENTIAL_STORE_DIR, CLIENT_SECRET_FILE)
-            flow = InstalledAppFlow.from_client_secrets_file(
-                secret_path, SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(secret_path, SCOPES)
             credentials = flow.run_local_server()
-        with open(credential_path, 'wb') as token:
+        with open(credential_path, "wb") as token:
             pickle.dump(credentials, token)
 
     return credentials
@@ -67,7 +65,7 @@ def get_drive_service(credentials=None):
     if not credentials:
         credentials = get_credentials()
     try:
-        return build('drive', DRIVE_V, credentials=credentials)
+        return build("drive", DRIVE_V, credentials=credentials)
     except AttributeError as e:
         print(f"Credentials attribute error {credentials.items()}")
         raise e
@@ -93,24 +91,24 @@ def move_spreadsheet_and_share(s_id, folder, credentials=None):
     """
     # Switch parents
     service = get_drive_service(credentials)
-    file = service.files().get(fileId=s_id, fields='parents').execute()
-    previous_parents = ','.join(file.get('parents'))
-    file = service.files().update(fileId=s_id,
-                                  addParents=folder,
-                                  removeParents=previous_parents,
-                                  fields='id, parents').execute()
+    file = service.files().get(fileId=s_id, fields="parents").execute()
+    previous_parents = ",".join(file.get("parents"))
+    file = (
+        service.files()
+        .update(
+            fileId=s_id,
+            addParents=folder,
+            removeParents=previous_parents,
+            fields="id, parents",
+        )
+        .execute()
+    )
 
     # Fix permissions
-    file_permission = {
-            'role': 'writer',
-            'type': 'anyone',
-            'withLink': True,
-            }
+    file_permission = {"role": "writer", "type": "anyone", "withLink": True}
     service.permissions().create(
-                fileId=s_id,
-                body=file_permission,
-                fields="id"
-                ).execute()
+        fileId=s_id, body=file_permission, fields="id"
+    ).execute()
 
 
 def call_script_service(request, credentials=None, service=None):
@@ -125,34 +123,31 @@ def call_script_service(request, credentials=None, service=None):
     if not service:
         if not credentials:
             credentials = get_credentials()
-        service = build('script', SCRIPT_V, credentials=credentials)
+        service = build("script", SCRIPT_V, credentials=credentials)
 
     try:
         request["devMode"] = "true"  # runs last save instead of last deployed
-        response = service.scripts().run(
-            body=request,
-            scriptId=SCRIPT_ID).execute()
+        response = service.scripts().run(body=request, scriptId=SCRIPT_ID).execute()
 
-        if 'error' in response:
+        if "error" in response:
             # The API executes, but the script returned an error.
 
             # Extract the first (and only) set of error details. The values of
             # this object are the script's 'errorMessage' and 'errorType', and
             # and list of stack trace elements.
-            error = response['error']['details'][0]
-            print('Script error message: {}'.format(error['errorMessage']))
+            error = response["error"]["details"][0]
+            print("Script error message: {}".format(error["errorMessage"]))
 
-            if 'scriptStackTraceElements' in error:
+            if "scriptStackTraceElements" in error:
                 # There may not be a stacktrace if the script didn't start
                 # executing.
-                print('Script error stacktrace:')
-                for trace in error['scriptStackTraceElements']:
-                    print('\t{1}: {0}'.format(trace['function'],
-                          trace['lineNumber']))
+                print("Script error stacktrace:")
+                for trace in error["scriptStackTraceElements"]:
+                    print("\t{1}: {0}".format(trace["function"], trace["lineNumber"]))
             return None
         else:
             # return the response:
-            return response['response'].get('result', {})
+            return response["response"].get("result", {})
 
     except errors.HttpError as e:
         # The API encountered a problem before the script started executing.

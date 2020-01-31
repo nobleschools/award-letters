@@ -67,8 +67,9 @@ def build_award_df(dfs, campus, config, debug):
 
     #  Second, pull columns that are lookups from other tables and append
     #  We skip the "special" ones for now because they might calculate off lookups
-    for column, target in (f for f in complex_award_fields if
-                           not f[1].startswith("SPECIAL")):
+    for column, target in (
+        f for f in complex_award_fields if not f[1].startswith("SPECIAL")
+    ):
         # parse the target and then call the appropriate function
         # to add a column to award_df
         if debug:
@@ -89,8 +90,9 @@ def build_award_df(dfs, campus, config, debug):
                 _do_app_field, args=(dfs["app"], tokens[1:]), axis=1
             )
 
-    for column, target in (f for f in complex_award_fields if
-                           f[1].startswith("SPECIAL")):
+    for column, target in (
+        f for f in complex_award_fields if f[1].startswith("SPECIAL")
+    ):
         if debug:
             print(f"{column} w spec({target})")
         tokens = target.split(sep=":")
