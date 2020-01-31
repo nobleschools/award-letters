@@ -279,8 +279,7 @@ report_award_fields: #Columns in 'Award data' tab (generally from live_award)
     - Last,First: Student
     - College/University: College/University
     - Result: Result (from Naviance)
-    - comments: APPS:NCESid:SID:comments
-    - 'xGrad rate_All': COLLEGE:NCESid:Adj6yrGrad_All #just for calculating
+    - 'xGrad rate_All': COLLEGE:NCESid:Adj6yrGrad_All  # just for calculating
     - 'xGrad rate_AAH': COLLEGE:NCESid:Adj6yrGrad_AA_Hisp
     - 'Grad rate': SPECIAL:xGrad rate_All:xGrad rate_AAH
     - 'Grad rate for sorting': SPECIAL:Grad rate:comments
@@ -290,6 +289,15 @@ report_award_fields: #Columns in 'Award data' tab (generally from live_award)
     - 'Government grants': Government grants (Pell/SEOG/MAP)
     - 'Student Loans offered': Student Loans offered (include all non-parent)
     - 'Work Study': Work Study (enter for comparison if desired)
+    - comments: APPS:NCESid:SID:comments
+    - Unique: SPECIAL:0:1
+    - Award: SPECIAL:0:1
+report_award_sorts:
+    Standard:  # Another section should be added for campus-specific sort instructions
+        - Campus: True
+        - Last,First: True
+        - 'Grad rate for sorting': False
+        - Home/Away: True
 
 report_student_fields: #Columns in 'Students' tab (generally from live_efc)
     # fields with x in the front go to the df, but not the excel

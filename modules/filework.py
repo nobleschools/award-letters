@@ -30,7 +30,7 @@ def process_config(settings_file, campus):
     for key in ['app_status_to_include', 'efc_tab_name', 'award_tab_name',
                 'efc_header_row', 'award_header_row', 'decision_tab_name',
                 'decision_options_tab_name', 'decision_options_header_row',
-                'decision_header_row', 'decision_defaults']:
+                'decision_header_row', 'decision_defaults', 'report_award_sorts']:
         if campus in cfg[key]:
             config[key] = cfg[key][campus]
         else:

@@ -39,6 +39,7 @@ def build_award_df(dfs, campus, config, debug):
     """Builds a dataframe for the award fields"""
     #  First, start the df for the items that are straight pulls from live_data
     report_award_fields = config["report_award_fields"]
+    report_award_sorts = config["report_award_sorts"]
     all_award_fields = []
     live_award_fields = []  # to hold the excel names
     live_award_targets = []  # to hold the live names
@@ -65,7 +66,9 @@ def build_award_df(dfs, campus, config, debug):
         print("Probably an error: no report columns pulling from live data")
 
     #  Second, pull columns that are lookups from other tables and append
-    for column, target in complex_award_fields:
+    #  We skip the "special" ones for now because they might calculate off lookups
+    for column, target in (f for f in complex_award_fields if
+                           not f[1].startswith("SPECIAL")):
         # parse the target and then call the appropriate function
         # to add a column to award_df
         if debug:
@@ -77,17 +80,29 @@ def build_award_df(dfs, campus, config, debug):
             )
         elif tokens[0] == "COLLEGE":
             award_df[column] = dfs["live_award"][tokens[1]].apply(
-                lambda x: np.nan if pd.isnull(x) else
-                dfs["college"][tokens[2]].get(safe2int(x), np.nan)
+                lambda x: np.nan
+                if pd.isnull(x)
+                else dfs["college"][tokens[2]].get(safe2int(x), np.nan)
             )
         elif tokens[0] == "APPS":
             award_df[column] = award_df.apply(
-                _do_app_field, args=(dfs["app"], tokens[1:]), axis=1)
-        elif tokens[0] == "SPECIAL":
-            award_df[column] = award_df.apply(
-                _do_special_award, args=(column, tokens[1:]), axis=1)
+                _do_app_field, args=(dfs["app"], tokens[1:]), axis=1
+            )
 
-    return award_df[[x for x in all_award_fields if not x.startswith("x")]]
+    for column, target in (f for f in complex_award_fields if
+                           f[1].startswith("SPECIAL")):
+        if debug:
+            print(f"{column} w spec({target})")
+        tokens = target.split(sep=":")
+        award_df[column] = award_df.apply(
+            _do_special_award, args=(column, tokens[1:]), axis=1
+        )
+
+    award_df = award_df[[x for x in all_award_fields if not x.startswith("x")]]
+    # These generators work on a list of single pair dicts
+    sort_terms = [list(item.keys())[0] for item in report_award_sorts]
+    sort_order = [list(item.values())[0] for item in report_award_sorts]
+    return award_df.sort_values(by=sort_terms, ascending=sort_order)
 
 
 def _do_app_field(award, app_df, keys):
@@ -104,19 +119,34 @@ def _do_app_field(award, app_df, keys):
 def _do_special_award(award, column_name, args):
     """Apply function for special cases in award table. Custom for each column name"""
     if column_name == "Grad rate":
-        response = award[args[1]] if (
-            award["Race/Eth"] in ["H", "B", "M"]
-            ) else award[args[0]]
+        overall_gr = args[0]
+        aah_gr = args[1]
+        response = (
+            award[aah_gr]
+            if (award["Race/Eth"] in ["H", "B", "M"])
+            else award[overall_gr]
+        )
         return "N/A" if pd.isnull(response) else response
-    if column_name == "Grad rate for sorting":
+
+    elif column_name == "Grad rate for sorting":
         base_gr = award[args[0]]
         comments = award[args[1]]
         if base_gr == "N/A":
             return 0.0
         else:
             if comments == "Posse":
-                return (base_gr+0.15) if base_gr < 0.7 else (1.0-(1.0-base_gr)/2)
+                return (
+                    (base_gr + 0.15) if base_gr < 0.7 else (1.0 - (1.0 - base_gr) / 2)
+                )
             else:
                 return base_gr
+
+    elif column_name == "Unique":
+        return 1
+
+    elif column_name == "Award":
+        return 1
+
     # Catchall for errors:
-    return '*'.join(args)+'+'+column_name
+    else:
+        return "*".join(args) + "+" + column_name
