@@ -4,7 +4,6 @@ Module for doing direct reads and writes from the google docs
 """
 
 from time import time
-import gspread
 import pandas as pd
 import numpy as np
 
@@ -496,8 +495,9 @@ def write_new_doc(dfs, campus, config, debug):
 
     # Create the brand new Google Doc and open permissions
     t0 = time()
+    print("Calling credentials", flush=True)
     credentials = googleapi.get_credentials()
-    gc = gspread.authorize(credentials)
+    gc = googleapi.gspread_client(credentials)
     if debug:
         print('--Credentials and authorization took {:.2f} seconds'.format(
             time()-t0), flush=True)

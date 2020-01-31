@@ -15,7 +15,7 @@ def process_config(settings_file, campus):
     """Returns a dict of simple keyword configurations based on what
     was in the yaml file and the specific campus"""
     with open(settings_file, 'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
+        cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
     config = {}
 
     # Handle the settings based on the complex/standard switch

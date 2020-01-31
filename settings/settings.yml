@@ -20,6 +20,7 @@ campus_list:
     - Golder
     - Hansberry
     - Johnson
+    - Mansueto
     - Muchin
     - Noble
     - Pritzker
@@ -231,9 +232,10 @@ decision_option_fields:
 ###################################################################
 # Details about the drive setup
 #
-drive_folder: 19bQt8AJI6mYiUAycIOYhGmegGwPCpkM_
-#drive_folder: 1NGcIt5fvcwjNdAa-JTop8qwXG1vEz4ha
-file_stem: 2019 Aid Award Tracker
+drive_folder: 1dbDCbC6lLHR7Ez9H3-9knBuL9k0JnJ4K
+#drive_folder: 19bQt8AJI6mYiUAycIOYhGmegGwPCpkM_ 2019
+#drive_folder: 1NGcIt5fvcwjNdAa-JTop8qwXG1vEz4ha 2018
+file_stem: 2020 Aid Award Tracker
 
 ###################################################################
 # Details about the Google doc structure:
@@ -241,7 +243,7 @@ file_stem: 2019 Aid Award Tracker
 efc_tab_name:
     Standard: EFC data
     Comer: 7.1.EFC data
-    Butler: Student data and summaries
+    #Butler: Student data and summaries
     UIC: EFC and Scholarship data
 award_tab_name:
     Standard: Award data

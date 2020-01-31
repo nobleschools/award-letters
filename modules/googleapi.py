@@ -2,26 +2,29 @@
 
 """Module file for all interaction with Google API"""
 import os
+import pickle
 import socket
+import gspread
 
-from apiclient import discovery
-from oauth2client import client
-from oauth2client import tools
-from oauth2client.file import Storage
+from googleapiclient import errors
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.auth.transport.requests import AuthorizedSession
 
-from apiclient import errors
 
 CREDENTIAL_STORE_DIR = '.credentials'
 CREDENTIAL_STORE_FILE = 'award-letters.json'
 SCOPES = [
           'https://www.googleapis.com/auth/drive',
-          'https://spreadsheets.google.com/feeds',
+          # 'https://spreadsheets.google.com/feeds',
           'https://www.googleapis.com/auth/spreadsheets',
           ]
 CLIENT_SECRET_FILE = 'client_secret.json'
 DEFAULT_TIMEOUT = 300.0  # 5 minutes total timeout
 APPLICATION_NAME = 'Award Letter Trackers'
-SCRIPT_ID = 'M3ZRRi0AvnjoCeQzL3JszW3d8W73qGbVI'
+SCRIPT_ID = "Mnmyh2DYQEzLuWOvbDD0zJZ76E4tkxNYa"
+# SCRIPT_ID = 'M3ZRRi0AvnjoCeQzL3JszW3d8W73qGbVI'
 SCRIPT_V = 'v1'
 DRIVE_V = 'v3'
 
@@ -38,15 +41,22 @@ def get_credentials():
     if not os.path.exists(CREDENTIAL_STORE_DIR):
         os.makedirs(CREDENTIAL_STORE_DIR)
     credential_path = os.path.join(CREDENTIAL_STORE_DIR, CREDENTIAL_STORE_FILE)
+    credentials = None
+    if os.path.exists(credential_path):
+        with open(credential_path, 'rb') as token:
+            credentials = pickle.load(token)
 
-    store = Storage(credential_path)
-    credentials = store.get()
-    if not credentials or credentials.invalid:
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            secret_path = os.path.join(CREDENTIAL_STORE_DIR, CLIENT_SECRET_FILE)
+            flow = InstalledAppFlow.from_client_secrets_file(
+                secret_path, SCOPES)
+            credentials = flow.run_local_server()
+        with open(credential_path, 'wb') as token:
+            pickle.dump(credentials, token)
 
-        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
-        flow.user_agent = APPLICATION_NAME
-        credentials = tools.run_flow(flow, store)
-        print('Storing credentials to ' + credential_path)
     return credentials
 
 
@@ -56,8 +66,24 @@ def get_drive_service(credentials=None):
     """
     if not credentials:
         credentials = get_credentials()
-    service = discovery.build('drive', DRIVE_V, credentials=credentials)
-    return service
+    try:
+        return build('drive', DRIVE_V, credentials=credentials)
+    except AttributeError as e:
+        print(f"Credentials attribute error {credentials.items()}")
+        raise e
+
+
+def gspread_client(credentials):
+    """
+    Returns a gspread client object.
+    Google has deprecated Oauth2, but the gspread library still uses the creds
+    from that system, so this function bypasses the regular approach and creates
+    and authorizes the client here instead.
+    Code copied from answer here: https://github.com/burnash/gspread/issues/472
+    """
+    gc = gspread.Client(auth=credentials)
+    gc.session = AuthorizedSession(credentials)
+    return gc
 
 
 def move_spreadsheet_and_share(s_id, folder, credentials=None):
@@ -99,7 +125,7 @@ def call_script_service(request, credentials=None, service=None):
     if not service:
         if not credentials:
             credentials = get_credentials()
-        service = discovery.build('script', SCRIPT_V, credentials=credentials)
+        service = build('script', SCRIPT_V, credentials=credentials)
 
     try:
         request["devMode"] = "true"  # runs last save instead of last deployed
