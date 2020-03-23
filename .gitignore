@@ -117,3 +117,4 @@ current_applications*.csv
 current_students*.csv
 .vscode
 temp_do.csv
+award_table_for_excel.csv

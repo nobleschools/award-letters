@@ -242,17 +242,17 @@ file_stem: 2020 Aid Award Tracker
 #
 efc_tab_name:
     Standard: EFC data
-    Comer: 7.1.EFC data
+    #Comer: 7.1.EFC data
     #Butler: Student data and summaries
     UIC: EFC and Scholarship data
 award_tab_name:
     Standard: Award data
-    Comer: 7.Award Data
+    #Comer: 7.Award Data
 decision_options_tab_name:
     Standard: DecisionOptions
 decision_tab_name:
     Standard: Decisions
-    Comer: 7.2.Decisions
+    #Comer: 7.2.Decisions
 efc_header_row:
     Standard: 1
 award_header_row:
