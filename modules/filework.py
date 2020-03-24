@@ -75,6 +75,7 @@ def process_config(settings_file, campus):
         "colleges",
         "sattoact",
         "bump_list",
+        "ambitious_pp",
     ]:
         config[input_key] = cfg["inputs"][input_key]
 
@@ -331,4 +332,5 @@ def read_dfs(config, debug):
     dfs["college"] = read_colleges(config["colleges"])
     dfs["sattoact"] = read_standard_csv(config["sattoact"])
     dfs["bump_list"] = read_bumplist(config["bump_list"])
+    dfs["ambitious_pp"] = read_standard_csv(config["ambitious_pp"])
     return dfs

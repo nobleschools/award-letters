@@ -10,6 +10,7 @@ inputs:
     colleges: settings/all_colleges.csv
     sattoact: settings/sat_to_act.csv
     bump_list: settings/bump_list.csv
+    ambitious_pp: settings/app_programs.csv
 
 campus_list:
     - Baker
@@ -264,7 +265,7 @@ decision_header_row:
     Comer: 3
 decision_defaults: #keys are the options and values are "grad rate" for choice
     Standard:
-        'Ambitious Alternative Pathway (enter to right)': 0.17
+        'Ambitious Postsecondary Pathway (select to right)': 0.17
         'No college/working': 0.0
 
 ###################################################################

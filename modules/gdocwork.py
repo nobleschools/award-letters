@@ -243,6 +243,10 @@ def refresh_decisions(dfs, campus, config, debug):
     # Second, create lists of lists for the actual tables
     do_table = [["student", "college", "Result", "pgr", "out_of_pocket", "cgs"]]
     d_table = [["SID", "LastFirst", "SR", "ER", "Choice", "Student TGR"]]
+    app_table = [["ProgramName", "Index"]]  # This little table is for APP choices
+    for index, row in dfs["ambitious_pp"].iterrows():
+        app_table.append([index, list(row)[0]])
+    app_table.insert(1, ["", "N/A"])
     current_row = 1 + decision_options_header_row  # index of choice table
     for index, row in s_df.iterrows():
         # First get the a_df records that match the index on sid
@@ -304,7 +308,7 @@ def refresh_decisions(dfs, campus, config, debug):
     googleapi.call_script_service(
         {
             "function": "refreshDecisionOptions",
-            "parameters": [doc_key, decision_options_sheet_title, do_table],
+            "parameters": [doc_key, decision_options_sheet_title, do_table, app_table],
         }
     )
     if debug:
