@@ -262,7 +262,6 @@ decision_options_header_row:
     Standard: 1
 decision_header_row:
     Standard: 1
-    Comer: 3
 decision_defaults: #keys are the options and values are "grad rate" for choice
     Standard:
         'Ambitious Postsecondary Pathway (select to right)': 0.17
