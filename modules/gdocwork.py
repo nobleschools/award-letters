@@ -130,6 +130,10 @@ def read_current_doc(dfs, campus, config, debug):
         if sheet in ["efc", "decision"]:
             dfs[live_df].set_index("StudentID", inplace=True)
 
+    if debug:
+        print("{} lines in award tab and {} lines in efc tab".format(
+                len(dfs["live_award"]), len(dfs["live_efc"])))
+
 
 def _do_table_diff(current_index_set, new_index_set):
     """Utility function to perform a couple of set operations"""

@@ -8,21 +8,23 @@ import pandas as pd
 from modules.filework import safe2int
 
 
+def create_report_tables(dfs, campus, config, debug):
+    # First, create a dataframe for the "Award data" tab
+    dfs["award_report"] = build_award_df(dfs, campus, config, debug)
+    dfs["award_report"].to_csv("award_table_for_excel.csv", index=False)
+
+    # Second, create a dataframe for the "Students" tab
+    # This one will have extra columns if the Decisions tab exists
+    dfs["student_report"] = build_student_df(dfs, campus, config, debug)
+    dfs["student_report"].to_csv("student_table_for_excel.csv", index=False)
+
+
 def create_excel(dfs, campus, config, debug):
     """Will create Excel reports for sharing details from Google Docs"""
     if debug:
         print("Creating Excel report for {}".format(campus), flush=True)
-    # First, create a dataframe for the "Award data" tab
-    award_data_df = build_award_df(dfs, campus, config, debug)
-    award_data_df.to_csv("award_table_for_excel.csv", index=False)
 
-    # Second, create a dataframe for the "Students" tab
-    # This one will have extra columns if the Decisions tab exists
-    student_data_df = build_student_df(dfs, campus, config, debug)
-    student_data_df.to_csv("student_table_for_excel.csv", index=False)
-    print(student_data_df.head())
-
-    # Finally, actually create the excel
+    # Create the excel:
     # Initial document and hidden college lookup
     # Students tab
     # Award data tab
@@ -153,7 +155,6 @@ def build_award_df(dfs, campus, config, debug):
             test_df["MergeIndex"] = (
                 test_df.loc[:, "NCES"].astype(str) + ":" +
                 test_df.loc[:, "hs_student_id"].astype(str)
-                # test_df["NCES"].astype(str) + ":" + test_df["hs_student_id"].astype(str)
             )
             test_df.set_index("MergeIndex", inplace=True)
             test_df.drop_duplicates(subset=["NCES", "hs_student_id"], inplace=True)

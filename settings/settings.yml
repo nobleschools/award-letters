@@ -32,6 +32,10 @@ campus_list:
     - UIC
 
 ###################################################################
+# Output details:
+output_folder: Reports
+
+###################################################################
 # Location to save live pulls from the Google Docs
 #
 live_backup_folder: live_backups

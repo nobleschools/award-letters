@@ -48,6 +48,7 @@ def process_config(settings_file, campus):
 
     # For straight reads:
     for key in [
+        "output_folder",
         "live_backup_folder",
         "live_backup_prefix",
         "drive_folder",
@@ -335,3 +336,9 @@ def read_dfs(config, debug):
     dfs["bump_list"] = read_bumplist(config["bump_list"])
     dfs["ambitious_pp"] = read_standard_csv(config["ambitious_pp"])
     return dfs
+
+
+def create_folder_if_necessary(location):
+    """Checks for existence of folder and creates if not there"""
+    if not os.path.exists(location):
+        os.makedirs(location)

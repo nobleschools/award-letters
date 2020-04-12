@@ -8,7 +8,8 @@ import argparse
 from modules import filework  # Works with csv and yaml inputs
 from modules import basedata  # Creates "clean" tables for Google Docs
 from modules import gdocwork  # Works with the Google Docs
-from modules import reports  # creates Excel and PDF reports for a campus
+from modules import reports  # creates Excel reports for a campus
+from modules import pdf_reports  # creates PDF reports
 
 
 def all_main(settings_file, mode, campus, debug, skip):
@@ -38,89 +39,104 @@ def main(settings_file, mode, campus, debug):
 
     **Note that the * items are not yet implemented
     """
-    # First read the settings file
-    if mode in [
-        "all",
-        "save",
-        "make_new",
-        "push_local",
-        "report",
-        "combine",
-        "refresh_decisions",
-    ]:
+    # Note: comments in the all mode obviously apply to the subset modes
+    if mode == "all":
         config = filework.process_config(settings_file, campus)
-
-    # Grab csv inputs unless we're only saving the gdocs to a file
-    if mode in ["all", "make_new", "push_local", "report", "refresh_decisions"]:
+        # Grab csv inputs
         dfs = filework.read_dfs(config, debug)
-    else:
-        dfs = {"key": filework.read_doclist(config["key_file"])}
-
-    # Add calculated fields to roster files
-    if mode in ["all", "make_new", "push_local", "report", "refresh_decisions"]:
+        # Add calculated fields to roster files
         dfs["ros"] = basedata.add_strat_and_grs(
             dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
         )
-
-    # These are the "blank" tables that don't yet have any award info
-    # will add award and efc to the dfs dict
-    if mode in ["all", "make_new", "push_local"]:
+        # Add award and efc to the dfs dict
+        # These are the "blank" tables that don't yet have any award info
         basedata.make_clean_gdocs(dfs, config, debug)
-
-    # Read the Google Docs if available and save to local file
-    if mode in ["all", "save"]:
+        # Read the Google Docs if available and save to local file
         # this adds live_efc and live_award to dfs
         gdocwork.read_current_doc(dfs, campus, config, debug)
-        if debug:
-            print(
-                "{} lines in award tab and {} lines in efc tab".format(
-                    len(dfs["live_award"]), len(dfs["live_efc"])
-                )
-            )
+        filework.save_live_dfs(dfs, campus, config, debug)
+        # Merge Google Docs info and write back to Google Docs
+        # Just the presence of rows (don't overwrite values)
+        gdocwork.sync_doc_rows(dfs, campus, config, debug)
+        # Refresh live data after syncing
+        gdocwork.read_current_doc(dfs, campus, config, debug)
+        # Update the Decisions tab (do after refreshing the award data tab)
+        gdocwork.refresh_decisions(dfs, campus, config, debug)
+        # Refresh live data after refresh_decisions for all
+        gdocwork.read_current_doc(dfs, campus, config, debug)
+        filework.save_live_dfs(dfs, campus, config, debug)
+        # Generate reports
+        reports.create_report_tables(dfs, campus, config, debug)
+        reports.create_excel(dfs, campus, config, debug)
 
+    elif mode == "save":
+        config = filework.process_config(settings_file, campus)
+        dfs = {"key": filework.read_doclist(config["key_file"])}
+        gdocwork.read_current_doc(dfs, campus, config, debug)
         filework.save_live_dfs(dfs, campus, config, debug)
 
-    # Merge Google Docs info and write back to Google Docs
-    #  Just the presence of rows (don't overwrite values)
-    if mode in ["all", "push_local"]:
-        if ("live_award" not in dfs.keys()) or ("live_efc" not in dfs.keys()):
-            filework.read_local_live_data(dfs, campus, config, debug)
-
-        gdocwork.sync_doc_rows(dfs, campus, config, debug)
-
-    # Write a blank document if completely blank (returns None if doc exists)
-    if mode in ["make_new"]:
+    elif mode == "make_new":
+        config = filework.process_config(settings_file, campus)
+        dfs = filework.read_dfs(config, debug)
+        dfs["ros"] = basedata.add_strat_and_grs(
+            dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
+        )
+        basedata.make_clean_gdocs(dfs, config, debug)
+        # Write a blank document if completely blank (returns None if doc exists)
         new_key = gdocwork.write_new_doc(dfs, campus, config, debug)
-
-        # Save output files
+        # Save output files (if it's brand new)
         if new_key:
             filework.save_to_doclist(config["key_file"], campus, new_key)
 
-    # Create combined outputs for the two main tables:
-    if mode in ["combine"]:
+    elif mode == "push_local":
+        config = filework.process_config(settings_file, campus)
+        dfs = filework.read_dfs(config, debug)
+        dfs["ros"] = basedata.add_strat_and_grs(
+            dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
+        )
+        basedata.make_clean_gdocs(dfs, config, debug)
+        filework.read_local_live_data(dfs, campus, config, debug)
+        gdocwork.sync_doc_rows(dfs, campus, config, debug)
+
+    elif mode == "combine":
+        config = filework.process_config(settings_file, campus)
+        dfs = {"key": filework.read_doclist(config["key_file"])}
+        # Create combined outputs for the two main tables:
         filework.combine_all_local_files(dfs, config, debug)
 
-    # Refresh live data after push_local for all
-    if mode in ["all"]:
-        gdocwork.read_current_doc(dfs, campus, config, debug)
-
-    # Update the Decisions tab (do after refreshing the award data tab)
-    if mode in ["all", "refresh_decisions"]:
-        if ("live_award" not in dfs.keys()) or ("live_efc" not in dfs.keys()):
-            filework.read_local_live_data(dfs, campus, config, debug)
-
+    elif mode == "refresh_decisions":
+        if debug:
+            print("Refreshing decisions (make sure you refreshed award data first!)")
+        config = filework.process_config(settings_file, campus)
+        dfs = filework.read_dfs(config, debug)
+        dfs["ros"] = basedata.add_strat_and_grs(
+            dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
+        )
+        filework.read_local_live_data(dfs, campus, config, debug)
         gdocwork.refresh_decisions(dfs, campus, config, debug)
 
-    # Refresh live data after refresh_decisions for all
-    if mode in ["all"]:
-        gdocwork.read_current_doc(dfs, campus, config, debug)
-        filework.save_live_dfs(dfs, campus, config, debug)
-
-    # Generate reports
-    if mode in ["all", "report"]:
-        if ("live_award" not in dfs.keys()) or ("live_efc" not in dfs.keys()):
-            filework.read_local_live_data(dfs, campus, config, debug)
+    elif mode == "report":
+        config = filework.process_config(settings_file, campus)
+        dfs = filework.read_dfs(config, debug)
+        dfs["ros"] = basedata.add_strat_and_grs(
+            dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
+        )
+        filework.read_local_live_data(dfs, campus, config, debug)
+        reports.create_report_tables(dfs, campus, config, debug)
         reports.create_excel(dfs, campus, config, debug)
+
+    elif mode == "report_single":
+        config = filework.process_config(settings_file, campus)
+        dfs = filework.read_dfs(config, debug)
+        dfs["ros"] = basedata.add_strat_and_grs(
+            dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
+        )
+        filework.read_local_live_data(dfs, campus, config, debug)
+        reports.create_report_tables(dfs, campus, config, debug)
+        pdf_reports.create_pdfs(dfs, campus, config, debug)
+
+    else:
+        print("Invalid mode. Aborting")
 
 
 if __name__ == "__main__":
@@ -168,13 +184,14 @@ if __name__ == "__main__":
         dest="mode",
         action="store",
         help="Function to execute [all/save/combine/make_new/"
-        + "push_local/refresh_decisions/report]",
+        + "push_local/refresh_decisions/report/report_single]",
         default="all",
     )
 
     args = parser.parse_args()
 
-    if args.campus == "All" and (args.mode not in ["combine", "report"]):
+    if args.campus == "All" and (args.mode not in
+                                 ["combine", "report", "report_single"]):
         # Special meta_function to loop through all
         all_main(args.settings_file, args.mode, args.campus, args.debug, args.skip)
     else:
