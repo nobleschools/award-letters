@@ -60,38 +60,41 @@ def _make_barrons_translation(x):
         return "?"
 
 
-def _get_sat_translation(x, lookup_df):
-    """Apply function for calculating equivalent ACT for SAT scores.
-    Lookup table has index of SAT with value of ACT"""
-    sat = x
-    if np.isreal(sat):
-        if sat in lookup_df.index:  # it's an SAT value in the table
-            return lookup_df.loc[sat, "ACT"]
+def _get_act_translation(x, lookup_df):
+    """Apply function for calculating equivalent SAT for ACT scores.
+    Lookup table has index of ACT with value of SAT"""
+    act = x
+    if np.isreal(act):
+        if act in lookup_df.index:  # it's an ACT value in the table
+            return lookup_df.loc[act, "SAT"]
     return np.nan  # default if not in table or not a number
 
 
-def _get_act_max(x):
+def _get_sat_max(x):
     """ Returns the max of two values if both are numbers, otherwise
     returns the numeric one or nan if neither is numeric"""
-    act, sat_in_act = x
-    if np.isreal(act):
-        if np.isreal(sat_in_act):
-            return max(act, sat_in_act)
+    sat, act_in_sat = x
+    if np.isreal(sat):
+        if np.isreal(act_in_sat):
+            return max(sat, act_in_sat)
         else:
-            return act
+            return sat
     else:
-        if np.isreal(sat_in_act):
-            return sat_in_act
+        if np.isreal(act_in_sat):
+            return act_in_sat
         else:
             return np.nan
 
 
 def _get_strategies(x, lookup_df):
-    """Apply function for calculating strategies based on gpa and act using the
+    """Apply function for calculating strategies based on gpa and sat using the
     lookup table (mirrors Excel equation for looking up strategy"""
-    gpa, act = x
-    if np.isreal(gpa) and np.isreal(act):
-        lookup = "{:.1f}:{:.0f}".format(max(np.floor(gpa * 10) / 10, 1.5), max(act, 12))
+    gpa, sat = x
+    sat = sat if np.isreal(sat) else 710
+    if np.isreal(gpa):
+        lookup = "{:.1f}:{:.0f}".format(
+            max(np.floor(gpa * 10) / 10, 1.5), max(sat, 710)
+        )
         return lookup_df["Strategy"].get(lookup, np.nan)
     else:
         return np.nan
@@ -99,7 +102,7 @@ def _get_strategies(x, lookup_df):
 
 def _safe2int(x):
     try:
-        return int(x + 20)
+        return int(x + 0)
     except BaseException:
         return x
 
@@ -121,7 +124,7 @@ def _get_gr_target(x, lookup_strat, goal_type):
         # Then define the column in the lookup table
         if efc == -1:
             column = "minus1_" + goal_type
-        elif race in ["W", "A"]:
+        elif race in ["W", "A", "P"]:
             column = "W/A_" + goal_type
         else:
             column = "AA/H_" + goal_type
@@ -133,7 +136,7 @@ def _get_gr_target(x, lookup_strat, goal_type):
 def _make_final_gr(x):
     """Apply function to do graduation rates"""
     race, sixyrgr, sixyrgraah, comments = x
-    first_gr = sixyrgraah if race in ["B", "H", "M"] else sixyrgr
+    first_gr = sixyrgraah if race in ["B", "H", "M", "I"] else sixyrgr
     if comments == "Posse":
         return (first_gr + 0.15) if first_gr < 0.7 else (1.0 - (1.0 - first_gr) / 2)
     else:
@@ -143,16 +146,16 @@ def _make_final_gr(x):
 # Finally, the main function that calls these
 
 
-def add_strat_and_grs(df, strat_df, target_df, sattoact_df, campus, debug):
+def add_strat_and_grs(df, strat_df, target_df, acttosat_df, campus, debug):
     """
     Adds Strategy and Target/Ideal grad rate numbers to the roster table
     """
     df = df.copy()
     if campus != "All":
         df = df[df["Campus"] == campus]
-    df["local_sat_in_act"] = df["SAT"].apply(_get_sat_translation, args=(sattoact_df,))
-    df["local_act_max"] = df[["ACT", "local_sat_in_act"]].apply(_get_act_max, axis=1)
-    df["Stra-tegy"] = df[["GPA", "local_act_max"]].apply(
+    df["local_act_in_sat"] = df["ACT"].apply(_get_act_translation, args=(acttosat_df,))
+    df["local_sat_max"] = df[["SAT", "local_act_in_sat"]].apply(_get_sat_max, axis=1)
+    df["Stra-tegy"] = df[["GPA", "local_sat_max"]].apply(
         _get_strategies, axis=1, args=(strat_df,)
     )
     df["Target Grad Rate"] = df[["Stra-tegy", "GPA", "EFC", "Race/ Eth"]].apply(

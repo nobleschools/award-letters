@@ -36,7 +36,7 @@ def _get_pgr(x, roster_df, college_df, bump_list_df):
     sid, nces = x
     nces = safeint(nces)
     race = roster_df.loc[sid, "Race/ Eth"]
-    field = "Adj6yrGrad_All" if race in ["W", "A"] else "Adj6yrGrad_AA_Hisp"
+    field = "Adj6yrGrad_All" if race in ["W", "A", "P"] else "Adj6yrGrad_AA_Hisp"
     if not pd.isnull(nces):
         raw_pgr = college_df[field].get(nces, "TBD")
     else:

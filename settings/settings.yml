@@ -8,7 +8,7 @@ inputs:
     strategies: settings/strategy_definitions.csv
     targets: settings/targets_by_strategy.csv
     colleges: settings/all_colleges.csv
-    sattoact: settings/sat_to_act.csv
+    acttosat: settings/act_to_sat.csv
     bump_list: settings/bump_list.csv
     ambitious_pp: settings/app_programs.csv
 
@@ -52,6 +52,8 @@ roster_fields: # fields to grab from the roster file in order
     - 'Race/ Eth'
     - Counselor
     - Advisor
+    - Cohort
+    - Gender
       
 app_fields: # fields to grab from the Naviance application data in order
     - Campus
@@ -303,10 +305,23 @@ report_award_sorts:
 
 report_student_fields: #Columns in 'Students' tab (generally from live_efc)
     # fields with x in the front go to the df, but not the excel
-    - Campus: var:Campus
-    - StudentID: StudentID
+    - Campus: Campus
+    - StudentID: INDEX:0
     - LastFirst: LastFirst
     - EFC: EFC
+    - TGR: ROSTER:Target Grad Rate
+    - GPA: ROSTER:GPA
+    - SAT: ROSTER:local_sat_max
+    - Counselor: ROSTER:Counselor
+    - Advisor: ROSTER:Advisor
+    - Strategy: ROSTER:Stra-tegy
+    - 'Race / Ethnicity': ROSTER:Race/ Eth
+    - Cohort: ROSTER:Cohort
+
+report_student_sorts:
+    Standard:
+      - Campus: True
+      - LastFirst: True
 
 report_award_formats: #Option formats to override defaults for each column
     SID:

@@ -8,7 +8,7 @@ import argparse
 from modules import filework  # Works with csv and yaml inputs
 from modules import basedata  # Creates "clean" tables for Google Docs
 from modules import gdocwork  # Works with the Google Docs
-from modules import excelreports  # creates Excel reports for a campus
+from modules import reports  # creates Excel and PDF reports for a campus
 
 
 def all_main(settings_file, mode, campus, debug, skip):
@@ -59,7 +59,7 @@ def main(settings_file, mode, campus, debug):
     # Add calculated fields to roster files
     if mode in ["all", "make_new", "push_local", "report", "refresh_decisions"]:
         dfs["ros"] = basedata.add_strat_and_grs(
-            dfs["ros"], dfs["strat"], dfs["target"], dfs["sattoact"], campus, debug
+            dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
         )
 
     # These are the "blank" tables that don't yet have any award info
@@ -120,7 +120,7 @@ def main(settings_file, mode, campus, debug):
     if mode in ["all", "report"]:
         if ("live_award" not in dfs.keys()) or ("live_efc" not in dfs.keys()):
             filework.read_local_live_data(dfs, campus, config, debug)
-        excelreports.create_excel(dfs, campus, config, debug)
+        reports.create_excel(dfs, campus, config, debug)
 
 
 if __name__ == "__main__":

@@ -39,6 +39,7 @@ def process_config(settings_file, campus):
         "decision_header_row",
         "decision_defaults",
         "report_award_sorts",
+        "report_student_sorts",
     ]:
         if campus in cfg[key]:
             config[key] = cfg[key][campus]
@@ -73,7 +74,7 @@ def process_config(settings_file, campus):
         "strategies",
         "targets",
         "colleges",
-        "sattoact",
+        "acttosat",
         "bump_list",
         "ambitious_pp",
     ]:
@@ -330,7 +331,7 @@ def read_dfs(config, debug):
     dfs["strat"] = read_standard_csv(config["strategies"])
     dfs["target"] = read_standard_csv(config["targets"])
     dfs["college"] = read_colleges(config["colleges"])
-    dfs["sattoact"] = read_standard_csv(config["sattoact"])
+    dfs["acttosat"] = read_standard_csv(config["acttosat"])
     dfs["bump_list"] = read_bumplist(config["bump_list"])
     dfs["ambitious_pp"] = read_standard_csv(config["ambitious_pp"])
     return dfs
