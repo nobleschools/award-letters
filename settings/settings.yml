@@ -300,6 +300,7 @@ report_award_fields: #Columns in 'Award data' tab (generally from live_award)
     - comments: APPS:NCESid:SID:comments
     - Unique: SPECIAL:0:1
     - Award: SPECIAL:0:1
+    - MoneyCode: COLLEGE:NCESid:MoneyCode
 report_award_sorts:
     Standard:  # Another section should be added for campus-specific sort instructions
         - Campus: True
@@ -326,6 +327,23 @@ report_student_sorts:
     Standard:
       - Campus: True
       - LastFirst: True
+    Hansberry:
+      - Campus: True
+      - Counselor: True
+      - LastFirst: True
+    Mansueto:
+      - Campus: True
+      - Counselor: True
+      - LastFirst: True
+    Rauner:
+      - Campus: True
+      - Counselor: True
+      - LastFirst: True
+    Bulls:
+      - Campus: True
+      - Counselor: True
+      - LastFirst: True
+
 
 report_award_formats: #Option formats to override defaults for each column
     SID:

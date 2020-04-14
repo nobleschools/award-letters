@@ -133,6 +133,9 @@ def main(settings_file, mode, campus, debug):
         )
         filework.read_local_live_data(dfs, campus, config, debug)
         reports.create_report_tables(dfs, campus, config, debug)
+        # First line creates a combined campus file
+        pdf_reports.create_pdfs(dfs, campus, config, debug, single_pdf=False)
+        # This line creates one per student
         pdf_reports.create_pdfs(dfs, campus, config, debug)
 
     else:

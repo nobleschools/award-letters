@@ -14,11 +14,14 @@ from modules import filework
 
 
 TOP_MARGIN = 0.75
+BOTTOM_MARGIN = 0.75
 LEFT_MARGIN = 0.5
 RIGHT_MARGIN = 0.5
 LINE_WIDTH = 0.0075
+THICK_LINE = 0.02
 W = [2.77, 0.49, 0.8, 0.61, 0.63, 0.65, 0.65, 0.65, 0.66, 0.76, 0.7]
 H = [0.32, 0.21, 0.15, 0.196, 0.196, 0.196, 0.196, 0.196, 0.196, 0.25]
+MH = 0.22
 
 
 def _set_color_name(pdf, name, type="fill"):
@@ -61,20 +64,24 @@ def initiate_pdf_object():
     return pdf
 
 
-def _safe_dollar(efc):
-    """Returns the EFC as a dollar format if applicable"""
-    if pd.isnull(efc):
-        return "N/A"
-    elif efc == -1:
+def _safe_dollar(amt, nan="N/A", blank_zeros=False):
+    """Returns the EFC/amount as a dollar format if applicable"""
+    if pd.isnull(amt):
+        return nan
+    elif amt == -1:
         return "-1"
+    elif blank_zeros and amt == 0:
+        return "$      -"
     else:
         try:
-            return f"${float(efc):,.0f}"
+            return (
+                f"${float(amt):,.0f}" if float(amt) >= 0 else f"$ ({float(-amt):,.0f})"
+            )
         except Exception:
-            return str(efc)
+            return str(amt)
 
 
-def add_pdf_header_rows(pdf, data, campus, second=False):
+def add_pdf_header_row(pdf, data, campus, second=False):
     """
     Creates a new page and adds the non-college specific data to report
     """
@@ -189,6 +196,109 @@ def add_pdf_header_rows(pdf, data, campus, second=False):
         pdf.line(line_x, line_top, line_x, line_bottom)
 
 
+def _s_cell(pdf, w, txt, h, border, ln, align, fill, font="font_r", size=11):
+    """
+    Fits text in a cell by reducing the font size
+    """
+    new_size = size
+    while (w < pdf.get_string_width(txt)) and new_size > 6:
+        new_size -= 1
+        pdf.set_font(font, "", new_size)
+    pdf.cell(w=w, txt=txt, h=h, border=border, ln=ln, align=align, fill=fill)
+    pdf.set_font(font, "", size)
+
+
+def _get_net_price(data):
+    """Utility to pull out net price from a data row"""
+    try:
+        np = (
+            data["Tuition & Fees"]
+            + data["Room & board"]
+            - data["College grants & scholarships"]
+            - data["Government grants"]
+        )
+        oop1 = np - min(data["Student Loans offered"], 6000)
+        oop2 = np - data["Student Loans offered"]
+        return (
+            _safe_dollar(np, nan="", blank_zeros=True),
+            _safe_dollar(oop1, nan="", blank_zeros=True),
+            _safe_dollar(oop2, nan="", blank_zeros=True),
+        )
+    except Exception:
+        return ("", "", "")
+
+
+def add_college_rows(pdf, student_award):
+    """
+    Adds a row for each record in the student_award dataframe.
+    The dataframe size is managed by the calling function.
+    """
+    for i, data in student_award.iterrows():
+        pdf.set_font("font_r", "", 11)
+        text = data["College/University"]
+        _s_cell(pdf, w=W[0], txt=text, h=H[-1], border=1, ln=0, align="L", fill=False)
+        text = f'{data["Grad rate for sorting"]:.0%}'
+        pdf.cell(w=W[1], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
+        text = data["Result"]
+        pdf.cell(w=W[2], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
+        text = _safe_dollar(data["Tuition & Fees"], nan="", blank_zeros=True)
+        pdf.cell(w=W[3], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
+        text = _safe_dollar(data["Room & board"], nan="", blank_zeros=True)
+        pdf.cell(w=W[4], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
+        text = _safe_dollar(
+            data["College grants & scholarships"], nan="", blank_zeros=True
+        )
+        pdf.cell(w=W[5], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
+        text = _safe_dollar(data["Government grants"], nan="", blank_zeros=True)
+        pdf.cell(w=W[6], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
+        np, oop1, oop2 = _get_net_price(data)
+        pdf.set_font("font_b", "", 11)
+        pdf.cell(w=W[7], txt=np, h=H[-1], border=1, ln=0, align="C", fill=False)
+        text = _safe_dollar(data["Student Loans offered"], nan="", blank_zeros=True)
+        pdf.set_font("font_r", "", 11)
+        pdf.cell(w=W[8], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
+        pdf.set_font("font_b", "", 11)
+        if oop1 != "":
+            pdf.cell(w=W[9], txt=oop1, h=H[-1], border=1, ln=0, align="C", fill=False)
+            pdf.cell(w=W[10], txt=oop2, h=H[-1], border=1, ln=1, align="C", fill=False)
+        else:
+            text = "?" if pd.isnull(data["MoneyCode"]) else data["MoneyCode"]
+            pdf.cell(w=W[9], txt=text, h=H[-1], border=1, ln=0, align="L")
+            pdf.cell(w=W[10], txt="", h=H[-1], border=1, ln=1, align="L")
+
+
+def add_money_descriptions(pdf):
+    """
+    Adds money code descriptions to the bottom of the page
+    """
+    y_start = 8.5 - BOTTOM_MARGIN - 5.5 * MH
+    pdf.set_y(y_start)
+    pdf.set_font("font_b", "", 10)
+    text = (
+        'Definition for award codes shown in "Out of Pocket Cost" column: '
+        + "average unmet need for 0 EFC students BEFORE loans"
+    )
+    pdf.cell(w=sum(W), txt=text, h=MH, border=1, ln=1, align="L", fill=False)
+    money_descriptions = [
+        "+++: <$5,000 (i.e. no family contribution after Stafford loans)",
+        "++: $5,000-$8,000 (i.e. no more than $2,500 in need after Stafford)",
+        "++/-: Most awards ++, but some not as good",
+        "+/--: Most awards are bad, but some are good",
+        "+/---: Almost all awards are bad, but we had a few surprises",
+        "--: $12,000-$15,000",
+        "---: >$15,000",
+        "?: We really don't know (but that is more likely bad than not)",
+    ]
+    for i in range(4):
+        text = money_descriptions[i]
+        pdf.cell(w=sum(W[:5]), txt=text, h=MH, border=0, ln=0, align="L", fill=False)
+        text = money_descriptions[i + 4]
+        pdf.cell(w=sum(W[5:]), txt=text, h=MH, border=0, ln=1, align="L", fill=False)
+    pdf.set_line_width(THICK_LINE)
+    pdf.rect(LEFT_MARGIN, y_start, sum(W), 5 * MH)
+    pdf.set_line_width(LINE_WIDTH)
+
+
 def create_pdfs(dfs, campus, config, debug, single_pdf=True):
     """Will create PDF reports for the campus"""
     if debug:
@@ -206,22 +316,29 @@ def create_pdfs(dfs, campus, config, debug, single_pdf=True):
             print(f"Outputing to ({campus_fn})")
 
     # Loop through the roster
+    count = 0
     for i, student_data in student_df.iterrows():
         student_award = award_df[award_df["SID"] == i]
         if single_pdf:
             student_fn = (
                 campus
                 + "_"
-                + str(i)
-                + "_"
                 + student_data["LastFirst"].replace(" ", "_")
-                + date.today().strftime("_%m_%d_%Y")
+                + "_"
+                + str(i)
+                + date.today().strftime("_on_%m_%d_%Y")
                 + ".pdf"
             )
             pdf = initiate_pdf_object()
-            if debug:
-                print(f"Outputing to ({student_fn})")
-        add_pdf_header_rows(pdf, student_data, campus)
+        add_pdf_header_row(pdf, student_data, campus)
+        if len(student_award) <= 15:
+            add_college_rows(pdf, student_award)
+            add_money_descriptions(pdf)
+        else:
+            add_college_rows(pdf, student_award.iloc[:18, :])
+            add_pdf_header_row(pdf, student_data, campus, second=True)
+            add_college_rows(pdf, student_award.iloc[18:32, :])
+            add_money_descriptions(pdf)
         # Add rows
         # Add extra page and extra rows
 
@@ -231,11 +348,13 @@ def create_pdfs(dfs, campus, config, debug, single_pdf=True):
                 pdf.output(
                     os.path.join(config["output_folder"], campus, student_fn), "F"
                 )
-            break
+            count += 1
+            if debug and (count % 10 == 0):
+                print(f"{count}..", end="", flush=True)
 
     if not single_pdf:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            pdf.output(
-                os.path.join(config["output_folder"], campus_fn), "F"
-            )
+            pdf.output(os.path.join(config["output_folder"], campus_fn), "F")
+    elif debug:
+        print("Done", flush=True)
