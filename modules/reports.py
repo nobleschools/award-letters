@@ -54,6 +54,14 @@ def build_student_df(dfs, campus, config, debug):
             live_student_fields.append(this_key)
             live_student_targets.append(this_value)
     if live_student_targets:  # fields here will be straight pulls from live df
+        """
+        print(dfs["live_efc"].head())
+        print(dfs["live_efc"].columns)
+        print(len(dfs["live_efc"]))
+        """
+        # These 2 lines are necessary to handle single campus reports
+        if "Campus" not in dfs["live_efc"].columns:
+            dfs["live_efc"]["Campus"] = campus
         student_df = dfs["live_efc"][live_student_targets]
         student_df = student_df.rename(
             columns=dict(zip(live_student_targets, live_student_fields))

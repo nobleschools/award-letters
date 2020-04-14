@@ -339,6 +339,11 @@ def read_dfs(config, debug):
 
 
 def create_folder_if_necessary(location):
-    """Checks for existence of folder and creates if not there"""
-    if not os.path.exists(location):
-        os.makedirs(location)
+    """
+    Checks for existence of folder and creates if not there.
+    Location is a list and this function runs recursively
+    """
+    for i in range(len(location)):
+        this_location = os.path.join(*location[:(i+1)])
+        if not os.path.exists(this_location):
+            os.makedirs(this_location)
