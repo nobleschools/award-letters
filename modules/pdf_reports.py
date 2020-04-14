@@ -125,7 +125,11 @@ def add_pdf_header_row(pdf, data, campus, second=False):
     pdf.cell(w=W[3], txt="GPA", h=H[1], border=1, ln=0, align="R", fill=True)
 
     pdf.set_font("font_r", "", 11)
-    text = "N/A" if pd.isnull(data["GPA"]) else f"{data['GPA']:.2f}"
+    text = (
+        "N/A"
+        if (pd.isnull(data["GPA"]) or isinstance(data["GPA"], str))
+        else f"{data['GPA']:.2f}"
+    )
     pdf.cell(w=W[4], txt=text, h=H[1], border=1, ln=0, align="C", fill=False)
 
     pdf.set_font("font_b", "", 11)

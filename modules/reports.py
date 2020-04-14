@@ -11,18 +11,18 @@ from modules.filework import safe2int
 def create_report_tables(dfs, campus, config, debug):
     # First, create a dataframe for the "Award data" tab
     dfs["award_report"] = build_award_df(dfs, campus, config, debug)
-    dfs["award_report"].to_csv("award_table_for_excel.csv", index=False)
 
     # Second, create a dataframe for the "Students" tab
     # This one will have extra columns if the Decisions tab exists
     dfs["student_report"] = build_student_df(dfs, campus, config, debug)
-    dfs["student_report"].to_csv("student_table_for_excel.csv", index=False)
 
 
 def create_excel(dfs, campus, config, debug):
     """Will create Excel reports for sharing details from Google Docs"""
     if debug:
         print("Creating Excel report for {}".format(campus), flush=True)
+    dfs["award_report"].to_csv("award_table_for_excel.csv", index=False)
+    dfs["student_report"].to_csv("student_table_for_excel.csv", index=False)
 
     # Create the excel:
     # Initial document and hidden college lookup
@@ -54,11 +54,6 @@ def build_student_df(dfs, campus, config, debug):
             live_student_fields.append(this_key)
             live_student_targets.append(this_value)
     if live_student_targets:  # fields here will be straight pulls from live df
-        """
-        print(dfs["live_efc"].head())
-        print(dfs["live_efc"].columns)
-        print(len(dfs["live_efc"]))
-        """
         # These 2 lines are necessary to handle single campus reports
         if "Campus" not in dfs["live_efc"].columns:
             dfs["live_efc"]["Campus"] = campus
