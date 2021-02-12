@@ -3,10 +3,9 @@
 Module for creating the PDF reports from reports tables
 """
 
-# import numpy as np
-# import pandas as pd
 import warnings
 import os
+import zipfile
 import pandas as pd
 from fpdf import FPDF
 from datetime import date
@@ -214,17 +213,22 @@ def _s_cell(pdf, w, txt, h, border, ln, align, fill, font="font_r", size=11):
 
 def _get_net_price(data):
     """Utility to pull out net price from a data row"""
+    rb = 0 if pd.isnull(data["Room & board"]) else data["Room & board"]
+    cgs = (
+        0
+        if pd.isnull(data["College grants & scholarships"])
+        else data["College grants & scholarships"]
+    )
+    gg = 0 if pd.isnull(data["Government grants"]) else data["Government grants"]
+    sl = (
+        0 if pd.isnull(data["Student Loans offered"]) else data["Student Loans offered"]
+    )
     try:
-        np = (
-            data["Tuition & Fees"]
-            + data["Room & board"]
-            - data["College grants & scholarships"]
-            - data["Government grants"]
-        )
-        oop1 = np - min(data["Student Loans offered"], 6000)
-        oop2 = np - data["Student Loans offered"]
+        net_price = data["Tuition & Fees"] + rb - cgs - gg
+        oop1 = net_price - min(sl, 6000)
+        oop2 = net_price - sl
         return (
-            _safe_dollar(np, nan="", blank_zeros=True),
+            _safe_dollar(net_price, nan="", blank_zeros=True),
             _safe_dollar(oop1, nan="", blank_zeros=True),
             _safe_dollar(oop2, nan="", blank_zeros=True),
         )
@@ -255,9 +259,9 @@ def add_college_rows(pdf, student_award):
         pdf.cell(w=W[5], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
         text = _safe_dollar(data["Government grants"], nan="", blank_zeros=True)
         pdf.cell(w=W[6], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
-        np, oop1, oop2 = _get_net_price(data)
+        netp, oop1, oop2 = _get_net_price(data)
         pdf.set_font("font_b", "", 11)
-        pdf.cell(w=W[7], txt=np, h=H[-1], border=1, ln=0, align="C", fill=False)
+        pdf.cell(w=W[7], txt=netp, h=H[-1], border=1, ln=0, align="C", fill=False)
         text = _safe_dollar(data["Student Loans offered"], nan="", blank_zeros=True)
         pdf.set_font("font_r", "", 11)
         pdf.cell(w=W[8], txt=text, h=H[-1], border=1, ln=0, align="C", fill=False)
@@ -314,13 +318,17 @@ def create_pdfs(dfs, campus, config, debug, single_pdf=True):
     if not single_pdf:
         pdf = initiate_pdf_object()
         campus_fn = (
-            campus + "_PDF_Award_Reports_" + date.today().strftime("_%m_%d_%Y") + ".pdf"
+            campus
+            + "_PDF_Decision_Reports_"
+            + date.today().strftime("_%m_%d_%Y")
+            + ".pdf"
         )
         if debug:
             print(f"Outputing to ({campus_fn})")
 
     # Loop through the roster
     count = 0
+    filenames = []
     for i, student_data in student_df.iterrows():
         student_award = award_df[award_df["SID"] == i]
         if single_pdf:
@@ -349,10 +357,10 @@ def create_pdfs(dfs, campus, config, debug, single_pdf=True):
         if single_pdf:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                pdf.output(
-                    os.path.join(config["output_folder"], campus, student_fn), "F"
-                )
+                this_file = os.path.join(config["output_folder"], campus, student_fn)
+                pdf.output(this_file, "F")
             count += 1
+            filenames.append(this_file)
             if debug and (count % 10 == 0):
                 print(f"{count}..", end="", flush=True)
 
@@ -360,5 +368,19 @@ def create_pdfs(dfs, campus, config, debug, single_pdf=True):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             pdf.output(os.path.join(config["output_folder"], campus_fn), "F")
-    elif debug:
-        print("Done", flush=True)
+    else:
+        # ZIPUP filenames into a single zip file!
+        campus_fn = (
+            campus
+            + "_Single_Decision_Reports_"
+            + date.today().strftime("_%m_%d_%Y")
+            + ".zip"
+        )
+        with zipfile.ZipFile(
+            os.path.join(config["output_folder"], campus_fn), "w", zipfile.ZIP_DEFLATED
+        ) as myzip:
+            for file in filenames:
+                myzip.write(file)
+
+        if debug:
+            print("Done", flush=True)

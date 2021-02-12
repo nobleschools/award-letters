@@ -209,6 +209,7 @@ live_decision_fields: #StudentID is the index
     - endRow
     - College Choice (dropdown should match with student options)
     - match (hidden column)
+    - Ambitious Postsecondary Pathway choice (if selected to left)
     - Other College Choice (leave column to the left blank if entering here)
     - PGR for choice school
     - Student TGR
@@ -251,7 +252,7 @@ efc_tab_name:
     Standard: EFC data
     #Comer: 7.1.EFC data
     #Butler: Student data and summaries
-    UIC: EFC and Scholarship data
+    #UIC: EFC and Scholarship data
 award_tab_name:
     Standard: Award data
     #Comer: 7.Award Data
