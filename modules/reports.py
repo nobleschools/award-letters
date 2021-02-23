@@ -5,7 +5,190 @@ Module for creating the Excel reports from gdoc and local data
 
 import numpy as np
 import pandas as pd
+import os
+from datetime import datetime
 from modules.filework import safe2int
+
+
+# ----------------------------------------------------------------------
+# Some helper functions for Excel writing
+def safe_write(ws, r, c, val, f=None, n_a=""):
+    """calls the write method of worksheet after first screening for NaN"""
+    if not pd.isnull(val):
+        if f:
+            ws.write(r, c, val, f)
+        else:
+            ws.write(r, c, val)
+    elif n_a:
+        if f:
+            ws.write(r, c, n_a, f)
+        else:
+            ws.write(r, c, n_a)
+
+
+def write_array(ws, r, c, val, f=None):
+    """speciality function to write an array. Assumed non-null"""
+    if f:
+        ws.write_formula(r, c, val, f)
+    else:
+        ws.write_formula(r, c, val)
+
+
+def create_formats(wb, cfg_fmt, f_db={}):
+    """Takes a workbook and (likely empty) database to fill with formats"""
+    for name, db in cfg_fmt.items():
+        f_db[name] = wb.add_format(db)
+
+    return f_db
+
+
+def make_excel_indices():
+    """returns an array of Excel header columns from A through ZZ"""
+    alphabet = string.ascii_uppercase
+    master = list(alphabet)
+    for i in range(len(alphabet)):
+        master.extend([alphabet[i] + x for x in alphabet])
+    return master
+
+
+def _do_simple_sheet(writer, df, sheet_name, na_rep, index=True, f=None):
+    """Helper function to write cells and bypass the Pandas write"""
+    wb = writer.book
+    ws = wb.add_worksheet(sheet_name)
+    if index:
+        safe_write(ws, 0, 0, df.index.name, f=f, n_a=na_rep)
+    for col, label in enumerate(df.columns):
+        safe_write(ws, 0, col + 1 * index, label, f=f, n_a=na_rep)
+    
+    row = 1
+    for i, data in df.iterrows():
+        if index:
+            safe_write(ws, row, 0, i, f=f, n_a=na_rep)
+        for col_num, col_name in enumerate(df.columns):
+            safe_write(ws, row, col_num, data[col_name], f=f, n_a=na_rep)
+        row += 1
+
+    # This function is incomplete--doesn't currently write the data
+    return (wb, ws, sheet_name, len(df) + 1)
+
+
+def _do_initial_output(writer, df, sheet_name, na_rep, index=True):
+    """Helper function to push data to xlsx and return formatting handles"""
+    df.to_excel(writer, sheet_name=sheet_name, na_rep=na_rep, index=index)
+    wb = writer.book
+    ws = writer.sheets[sheet_name]
+    max_row = len(df) + 1
+    return (wb, ws, sheet_name, max_row)
+
+
+def create_awards_tab(writer, df, format_db):
+    """Adds the Awards tab to the output"""
+    df.drop(columns=["Unique", "Award", "MoneyCode"], inplace=True)
+    wb, ws, sn, max_row = _do_simple_sheet(writer, df, "AwardData", "", index=False)
+    ws.set_column("A:B", 8, None, {"hidden": 1})
+    ws.set_row(0, 75, format_db["p_header"])
+
+    # Add the calculated columns:
+    ws.write(0, 17, "Unique")
+    ws.write(0, 18, "Award")
+
+    for r in range(1, max_row):
+        ws.write(r, 17, f'=IF(OR(A{r+1}<>A{r},B{r+1}<>B{r}),1,0)', format_db["centered_integer"])
+        ws.write(r, 18, f'=IF(OR(AND(R{r+1}=1,ISNUMBER(M{r+1})),AND(R{r+1}=0,ISNUMBER(M{r+1}),M{r}=""),AND(R{r+1}=1,ISNUMBER(N{r+1})),AND(R{r+1}=0,ISNUMBER(N{r+1}),N{r}=""),AND(R{r+1}=1,ISNUMBER(O{r+1})),AND(R{r+1}=0,ISNUMBER(O{r+1}),O{r}="")),1,0)', format_db["centered_integer"])
+
+    names = {
+        "Students": "A",
+        "NCESs": "B",
+        "Names": "G",
+        "Results": "H",
+        "DataA": "K",
+        "DataB": "L",
+        "DataC": "M",
+        "DataD": "N",
+        "DataF": "O",
+        "DataW": "P",
+        "Unique": "R",
+        "Award": "S",
+    }
+    for name, col in names.items():
+        wb.define_name(
+            name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row)
+        )
+
+    max_col = max(names.values())
+    ws.autofilter("A1:" + max_col + "1")
+    ws.freeze_panes(1, 3)
+
+
+def create_students_tab(writer, df, format_db, hide_campus=False):
+    """Adds the Students tab to the output"""
+    wb, ws, sn, max_row = _do_initial_output(writer, df, "Students", "N/A", index=False)
+    
+    # Add the calculated columns:
+    ws.write(0, 12, "Acceptances", format_db["p_header"])
+    ws.write(0, 13, "Unique Awards", format_db["p_header"])
+    ws.write(0, 14, "% of awards collected", format_db["p_header"])
+    ws.write(0, 15, "College Choice", format_db["p_header"])
+
+    for r in range(1, max_row):
+        ws.write(r, 12, f'=COUNTIFS(Students,B{r+1},Results,"Accepted!",Unique,1)+COUNTIFS(Students,B{r+1},Results,"Choice!",Unique,1)', format_db["centered_integer"])
+        ws.write(r, 13, f'=COUNTIFS(Students,B{r+1},Award,1)', format_db["centered_integer"])
+        ws.write(r, 14, f'=IF(M{r+1}>0,N{r+1}/M{r+1},0)', format_db["centered_integer"])
+        ws.write(r, 15, 'TBD', format_db["centered_integer"])
+
+    # format data columns
+    ws.set_column("A:A", 9, format_db["left_normal_text"])  # , {"hidden", 1})
+    ws.set_column("B:B", 9)
+    ws.set_column("C:C", 34)
+    ws.set_column("E:E", 9, format_db["single_percent_centered"])
+    # ws.set_column("D:L", 9)
+
+    ws.set_row(0, 60)
+    names = {
+        "SIDs": "B",
+        "LastFirst": "C",
+        "EFCs": "D",
+        "MGRs": "E",
+        "GPAs": "F",
+        "SATs": "G",
+        "Counselors": "H",
+        "Advisors": "I",
+        "CollegeChoice": "M",
+    }
+    for name, col in names.items():
+        wb.define_name(
+            name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row)
+        )
+
+    max_col = max(names.values())
+    ws.autofilter("A1:" + max_col + "1")
+    ws.freeze_panes(1, 3)
+
+
+def create_college_money_tab(writer, df, format_db):
+    """Creates AllColleges from static file"""
+    wb, ws, sn, max_row = _do_initial_output(writer, df, "CollegeMoney", "N/A")
+
+    ws.set_column("D:E", 7, format_db["single_percent_centered"])
+    ws.set_column("B:B", 40)
+    ws.set_column("C:C", 22)
+    ws.set_column("F:M", 7)
+    names = {
+        "AllCollegeNCES": "A",
+        "AllCollegeMoneyCode": "H",
+        "AllCollegeLocation": "M",
+    }
+    for name, col in names.items():
+        wb.define_name(
+            name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row)
+        )
+
+    max_col = max(names.values())
+    ws.autofilter("A1:" + max_col + "1")
+    ws.hide()
+
+
+# ----------------------------------------------------------------------------
 
 
 def create_report_tables(dfs, campus, config, debug):
@@ -25,11 +208,22 @@ def create_excel(dfs, campus, config, debug):
     dfs["student_report"].to_csv("student_table_for_excel.csv", index=False)
 
     # Create the excel:
-    # Initial document and hidden college lookup
-    # Students tab
+    date_string = datetime.now().strftime("%m_%d_%Y")
+    fn = config["report_filename"].replace("CAMPUS", campus).replace("DATE", date_string)
+    writer = pd.ExcelWriter(os.path.join(config["report_folder"],fn), engine="xlsxwriter")
+    wb = writer.book
+    formats = create_formats(wb, config["excel_formats"])
+
     # Award data tab
+    create_awards_tab(writer, dfs["award_report"], formats)
+
+    # Students tab
+    create_students_tab(writer, dfs["student_report"], formats, hide_campus=(campus=="All"))
+    # Hidden college lookup
+    create_college_money_tab(writer, dfs["college"], formats)
     # Summary tab
-    # OptionsReport
+    # OptionsReport (maybe don't create in Excel?)
+    writer.save()
 
 
 def build_student_df(dfs, campus, config, debug):

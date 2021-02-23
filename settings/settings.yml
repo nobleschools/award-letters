@@ -52,6 +52,7 @@ roster_fields: # fields to grab from the roster file in order
     - StudentID # will be the index
     - GPA
     - ACT
+    - InterimSAT
     - SAT
     - 'Race/ Eth'
     - Counselor
@@ -279,6 +280,7 @@ decision_defaults: #keys are the options and values are "grad rate" for choice
 # Details about the Excel report
 #
 report_folder: output_reports
+report_filename: CAMPUS_Decision_Reports_DATE.xlsx
 report_award_fields: #Columns in 'Award data' tab (generally from live_award)
     # fields with x in the front go to the df, but not the excel
     - SID: SID
@@ -350,3 +352,96 @@ report_student_sorts:
 report_award_formats: #Option formats to override defaults for each column
     SID:
         width: 59
+
+# ---------------------------------------------------------------
+# Formatting for Excel
+excel_formats:
+    # copy of Pandas default header
+    p_header:
+        bold: True
+        align: center
+        valign: top
+        text_wrap: True
+        left: 1
+        bottom: 1
+        right: 1
+        top: 1
+    # non-colored number formats
+    percent_fmt:
+        num_format: 0.0%
+    percent_centered:
+        num_format: 0.0%
+        align: center
+    single_percent_centered:
+        num_format: 0%
+        align: center
+    single_percent_centered_dash_bottom:
+        num_format: 0%
+        align: center
+        bottom: 3
+    single_percent_centered_solid_bottom:
+        num_format: 0%
+        align: center
+        bottom: 1
+    centered_integer:
+        num_format: '#0'
+        align: center
+
+    # non-colored non-number formats
+    centered:
+        num_format: '#0'
+        align: center
+    centered_right:
+        num_format: '#0'
+        align: center
+        right: 1
+    right:
+        num_format: '#0'
+        right: 1
+    bold:
+        num_format: '#0'
+        bold: True
+        align: left
+    bold_wrap:
+        num_format: '#0'
+        bold: True
+        align: left
+        text_wrap: True
+        bottom: 1
+    bold_center_wrap:
+        num_format: '#0'
+        bold: True
+        align: center
+        valign: top
+        text_wrap: True
+        bottom: 1
+    bold_center_wrap_right:
+        num_format: '#0'
+        bold: True
+        align: center
+        valign: top
+        text_wrap: True
+        bottom: 1
+        right: 1
+    left_normal_text:
+        bold: False
+        align: left
+        top: 0
+        left: 0
+        right: 0
+        bottom: 0
+    dash_bottom:
+        bottom: 3
+    solid_bottom:
+        bottom: 1
+    solid_bottom_right:
+        bottom: 1
+        right: 1
+    dash_bottom_right:
+        bottom: 3
+        right: 1
+    bold_underline:
+        bold: True
+        align: left
+        underline: True
+        

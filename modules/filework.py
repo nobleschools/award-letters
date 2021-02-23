@@ -49,6 +49,9 @@ def process_config(settings_file, campus):
     # For straight reads:
     for key in [
         "output_folder",
+        "report_filename",
+        "report_folder",
+        "excel_formats",
         "live_backup_folder",
         "live_backup_prefix",
         "drive_folder",
@@ -241,6 +244,7 @@ def read_roster(fn, cols):
         converters={
             "EFC": safe2int,
             "ACT": safe2int,
+            "InterimSAT": safe2int,
             "SAT": safe2int,
             "GPA": safe2f,
             "StudentID": safe2int,
