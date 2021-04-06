@@ -314,6 +314,8 @@ report_award_sorts:
 
 report_student_fields: #Columns in 'Students' tab (generally from live_efc)
     # fields with x in the front go to the df, but not the excel
+    # ROSTER fields are from live_efc, DECISION from live_decision
+    # COMMENT OUT THE DECISION FIELDS IF THE DECISION TAB DOESN'T EXIST
     - Campus: Campus
     - StudentID: INDEX:0
     - LastFirst: LastFirst
@@ -326,6 +328,19 @@ report_student_fields: #Columns in 'Students' tab (generally from live_efc)
     - Strategy: ROSTER:Stra-tegy
     - 'Race / Ethnicity': ROSTER:Race/ Eth
     - Cohort: ROSTER:Cohort
+    - 'College Choice': DECISION:College Choice (dropdown should match with student options)
+    - 'Ambitious Postsecondary Pathway choice': DECISION:Ambitious Postsecondary Pathway choice (if selected to left)
+    - 'Other College Choice': DECISION:Other College Choice (leave column to the left blank if entering here)
+    - 'PGR for choice school': DECISION:PGR for choice school
+    - 'PGR-TGR': DECISION:PGR-TGR
+    - 'PGR within 10% of TGR?': DECISION:PGR within 10% of TGR?
+    - 'Reason for not meeting TGR': DECISION:Reason for not meeting TGR
+    - 'Out of Pocket at Choice (pulls from Award data tab weekly)': DECISION:Out of Pocket at Choice (pulls from Award data tab weekly)
+    - 'EFC (pulls from EFC tab)': DECISION:EFC (pulls from EFC tab)
+    - 'Exceeds Goal? (no more than 3000 over EFC)': DECISION:Exceeds Goal? (no more than 3000 over EFC)
+    - 'Flag for AC (use for notes to help AC with summer counseling)': DECISION:Flag for AC (use for notes to help AC with summer counseling)
+    - 'Comments (use for undermatching and affordability concerns)': DECISION:Comments (use for undermatching and affordability concerns)
+
 
 report_student_sorts:
     Standard:
@@ -366,7 +381,33 @@ excel_formats:
         bottom: 1
         right: 1
         top: 1
-    # non-colored number formats
+    # copy of Pandas default header, yellow
+    p_header_y:
+        bg_color: yellow
+        bold: True
+        align: center
+        valign: top
+        text_wrap: True
+        left: 1
+        bottom: 1
+        right: 1
+        top: 1
+    # copy of Pandas default header, orange
+    p_header_o:
+        bg_color: orange
+        bold: True
+        align: center
+        valign: top
+        text_wrap: True
+        left: 1
+        bottom: 1
+        right: 1
+        top: 1
+    #non-colored number formats
+    dollar_fmt:
+        num_format: '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)'
+    dollar_no_cents_fmt:
+        num_format: '_($* #,##00_);_($* (#,##0);_($* "-"??_);_(@_)'
     percent_fmt:
         num_format: 0.0%
     percent_centered:

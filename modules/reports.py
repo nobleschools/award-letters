@@ -12,9 +12,14 @@ from modules.filework import safe2int
 
 # ----------------------------------------------------------------------
 # Some helper functions for Excel writing
-def safe_write(ws, r, c, val, f=None, n_a=""):
+def safe_write(ws, r, c, val, f=None, n_a="", make_float=False):
     """calls the write method of worksheet after first screening for NaN"""
     if not pd.isnull(val):
+        if make_float:
+            try:
+                val = float(val)
+            except:
+                pass
         if f:
             ws.write(r, c, val, f)
         else:
@@ -59,16 +64,15 @@ def _do_simple_sheet(writer, df, sheet_name, na_rep, index=True, f=None):
         safe_write(ws, 0, 0, df.index.name, f=f, n_a=na_rep)
     for col, label in enumerate(df.columns):
         safe_write(ws, 0, col + 1 * index, label, f=f, n_a=na_rep)
-    
+
     row = 1
     for i, data in df.iterrows():
         if index:
-            safe_write(ws, row, 0, i, f=f, n_a=na_rep)
+            safe_write(ws, row, 0, i, f=None, n_a=na_rep)
         for col_num, col_name in enumerate(df.columns):
-            safe_write(ws, row, col_num, data[col_name], f=f, n_a=na_rep)
+            safe_write(ws, row, col_num, data[col_name], f=None, n_a=na_rep)
         row += 1
 
-    # This function is incomplete--doesn't currently write the data
     return (wb, ws, sheet_name, len(df) + 1)
 
 
@@ -93,8 +97,18 @@ def create_awards_tab(writer, df, format_db):
     ws.write(0, 18, "Award")
 
     for r in range(1, max_row):
-        ws.write(r, 17, f'=IF(OR(A{r+1}<>A{r},B{r+1}<>B{r}),1,0)', format_db["centered_integer"])
-        ws.write(r, 18, f'=IF(OR(AND(R{r+1}=1,ISNUMBER(M{r+1})),AND(R{r+1}=0,ISNUMBER(M{r+1}),M{r}=""),AND(R{r+1}=1,ISNUMBER(N{r+1})),AND(R{r+1}=0,ISNUMBER(N{r+1}),N{r}=""),AND(R{r+1}=1,ISNUMBER(O{r+1})),AND(R{r+1}=0,ISNUMBER(O{r+1}),O{r}="")),1,0)', format_db["centered_integer"])
+        ws.write(
+            r,
+            17,
+            f"=IF(OR(A{r+1}<>A{r},B{r+1}<>B{r}),1,0)",
+            format_db["centered_integer"],
+        )
+        ws.write(
+            r,
+            18,
+            f'=IF(OR(AND(R{r+1}=1,ISNUMBER(M{r+1})),AND(R{r+1}=0,ISNUMBER(M{r+1}),M{r}=""),AND(R{r+1}=1,ISNUMBER(N{r+1})),AND(R{r+1}=0,ISNUMBER(N{r+1}),N{r}=""),AND(R{r+1}=1,ISNUMBER(O{r+1})),AND(R{r+1}=0,ISNUMBER(O{r+1}),O{r}="")),1,0)',
+            format_db["centered_integer"],
+        )
 
     names = {
         "Students": "A",
@@ -111,9 +125,7 @@ def create_awards_tab(writer, df, format_db):
         "Award": "S",
     }
     for name, col in names.items():
-        wb.define_name(
-            name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row)
-        )
+        wb.define_name(name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row))
 
     max_col = max(names.values())
     ws.autofilter("A1:" + max_col + "1")
@@ -122,19 +134,113 @@ def create_awards_tab(writer, df, format_db):
 
 def create_students_tab(writer, df, format_db, hide_campus=False):
     """Adds the Students tab to the output"""
-    wb, ws, sn, max_row = _do_initial_output(writer, df, "Students", "N/A", index=False)
-    
+    # wb, ws, sn, max_row = _do_initial_output(writer, df, "Students", "N/A", index=False)
+    wb, ws, sn, max_row = _do_simple_sheet(
+        writer, df.iloc[:, :12], "Students", "N/A", index=False, f=format_db["p_header"]
+    )
+
     # Add the calculated columns:
-    ws.write(0, 12, "Acceptances", format_db["p_header"])
-    ws.write(0, 13, "Unique Awards", format_db["p_header"])
-    ws.write(0, 14, "% of awards collected", format_db["p_header"])
-    ws.write(0, 15, "College Choice", format_db["p_header"])
+    ws.write(0, 12, "Acceptances", format_db["p_header_y"])
+    ws.write(0, 13, "Unique Awards", format_db["p_header_y"])
+    ws.write(0, 14, "% of awards collected", format_db["p_header_y"])
+    ws.write(0, 15, "Total grants & scholarships (1 yr value)", format_db["p_header_y"])
+    ws.write(0, 16, "Total grants & scholarships (4 yr value)", format_db["p_header_y"])
+    ws.write(0, 17, "College Choice", format_db["p_header_o"])
+    ws.write(0, 18, "Ambitious Postsecondary Pathway choice", format_db["p_header_o"])
+    ws.write(0, 19, "Other College Choice", format_db["p_header_o"])
+    ws.write(0, 20, "PGR for choice school", format_db["p_header_y"])
+    ws.write(0, 21, "PGR-TGR", format_db["p_header_y"])
+    ws.write(0, 22, "PGR within 10% of TGR?", format_db["p_header_y"])
+    ws.write(0, 23, "Reason for not meeting TGR", format_db["p_header_o"])
+    ws.write(0, 24, "Out of Pocket at Choice", format_db["p_header_o"])
+    ws.write(0, 25, "Unmet need", format_db["p_header_o"])
+    ws.write(0, 26, "Exceeds Goal? (no more than 3000 over EFC)", format_db["p_header_o"])
+    ws.write(0, 27, "Comments (use for undermatching and affordability concerns)", format_db["p_header_o"])
 
     for r in range(1, max_row):
-        ws.write(r, 12, f'=COUNTIFS(Students,B{r+1},Results,"Accepted!",Unique,1)+COUNTIFS(Students,B{r+1},Results,"Choice!",Unique,1)', format_db["centered_integer"])
-        ws.write(r, 13, f'=COUNTIFS(Students,B{r+1},Award,1)', format_db["centered_integer"])
-        ws.write(r, 14, f'=IF(M{r+1}>0,N{r+1}/M{r+1},0)', format_db["centered_integer"])
-        ws.write(r, 15, 'TBD', format_db["centered_integer"])
+        ws.write(
+            r,
+            12,
+            f'=COUNTIFS(Students,B{r+1},Results,"Accepted!",Unique,1)+COUNTIFS(Students,B{r+1},Results,"Choice!",Unique,1)',
+            format_db["centered_integer"],
+        )
+        ws.write(
+            r, 13, f"=COUNTIFS(Students,B{r+1},Award,1)", format_db["centered_integer"]
+        )
+        ws.write(
+            r,
+            14,
+            f"=IF(M{r+1}>0,N{r+1}/M{r+1},0)",
+            format_db["single_percent_centered"],
+        )
+        ws.write(
+            r, 15, f"=SUMIFS(DataC,Students,B{r+1},Award,1)", format_db["dollar_fmt"]
+        )
+        ws.write(r, 16, f"=P{r+1}*4", format_db["dollar_fmt"])
+        safe_write(ws, r, 17, df["College Choice"].iloc[r - 1])
+        safe_write(ws, r, 18, df["Ambitious Postsecondary Pathway choice"].iloc[r - 1])
+        safe_write(ws, r, 19, df["Other College Choice"].iloc[r - 1])
+        safe_write(
+            ws,
+            r,
+            20,
+            df["PGR for choice school"].iloc[r - 1],
+            n_a="TBD",
+            f=format_db["single_percent_centered"],
+            make_float=True,
+        )
+        safe_write(
+            ws,
+            r,
+            21,
+            df["PGR-TGR"].iloc[r - 1],
+            n_a="TBD",
+            f=format_db["single_percent_centered"],
+            make_float=True,
+        )
+        safe_write(
+            ws,
+            r,
+            22,
+            df["PGR within 10% of TGR?"].iloc[r - 1],
+            n_a="TBD",
+            f=format_db["centered"],
+        )
+        safe_write(
+            ws,
+            r,
+            23,
+            df["Reason for not meeting TGR"].iloc[r - 1]
+        )
+        safe_write(
+            ws,
+            r,
+            24,
+            df["Out of Pocket at Choice (pulls from Award data tab weekly)"].iloc[r - 1],
+            n_a="TBD",
+            f=format_db["dollar_no_cents_fmt"],
+            make_float=True
+        )
+        safe_write(
+            ws,
+            r,
+            25,
+            f'=IF(AND(ISNUMBER(Y{r+1}),ISNUMBER(D{r+1})),MAX(Y{r+1}-D{r+1},0),"TBD")',
+            n_a="TBD"
+        )
+        safe_write(
+            ws,
+            r,
+            26,
+            df["Exceeds Goal? (no more than 3000 over EFC)"].iloc[r - 1],
+            n_a="TBD"
+        )
+        safe_write(
+            ws,
+            r,
+            27,
+            df["Comments (use for undermatching and affordability concerns)"].iloc[r - 1]
+        )
 
     # format data columns
     ws.set_column("A:A", 9, format_db["left_normal_text"])  # , {"hidden", 1})
@@ -142,6 +248,17 @@ def create_students_tab(writer, df, format_db, hide_campus=False):
     ws.set_column("C:C", 34)
     ws.set_column("E:E", 9, format_db["single_percent_centered"])
     # ws.set_column("D:L", 9)
+    ws.set_column("P:Q", 13)
+    ws.set_column("R:R", 35)
+    ws.set_column("S:T", 22)
+    ws.set_column("U:U", 9)
+    ws.set_column("V:V", 7)
+    ws.set_column("W:W", 10)
+    ws.set_column("X:X", 23)
+    ws.set_column("Y:Y", 9)
+    ws.set_column("Z:Z", 8)
+    ws.set_column("AA:AA", 14)
+    ws.set_column("AB:AB", 33)
 
     ws.set_row(0, 60)
     names = {
@@ -153,15 +270,22 @@ def create_students_tab(writer, df, format_db, hide_campus=False):
         "SATs": "G",
         "Counselors": "H",
         "Advisors": "I",
-        "CollegeChoice": "M",
+        "Strats": "J",
+        "Accepts": "M",
+        "UAwards": "N",
+        "Schol4Yr": "Q",
+        "CollegeChoice": "R",
+        "PGR": "U",
+        "PGRTGR": "V",
+        "PGRin10": "W",
+        "OOP": "Y",
+        "UMN": "Z",
+        "Affordable": "AA",
     }
     for name, col in names.items():
-        wb.define_name(
-            name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row)
-        )
+        wb.define_name(name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row))
 
-    max_col = max(names.values())
-    ws.autofilter("A1:" + max_col + "1")
+    ws.autofilter("A1:AB" + "1")
     ws.freeze_panes(1, 3)
 
 
@@ -172,16 +296,14 @@ def create_college_money_tab(writer, df, format_db):
     ws.set_column("D:E", 7, format_db["single_percent_centered"])
     ws.set_column("B:B", 40)
     ws.set_column("C:C", 22)
-    ws.set_column("F:M", 7)
+    ws.set_column("F:L", 7)
     names = {
         "AllCollegeNCES": "A",
         "AllCollegeMoneyCode": "H",
         "AllCollegeLocation": "M",
     }
     for name, col in names.items():
-        wb.define_name(
-            name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row)
-        )
+        wb.define_name(name, "=" + sn + "!$" + col + "$2:$" + col + "$" + str(max_row))
 
     max_col = max(names.values())
     ws.autofilter("A1:" + max_col + "1")
@@ -209,8 +331,12 @@ def create_excel(dfs, campus, config, debug):
 
     # Create the excel:
     date_string = datetime.now().strftime("%m_%d_%Y")
-    fn = config["report_filename"].replace("CAMPUS", campus).replace("DATE", date_string)
-    writer = pd.ExcelWriter(os.path.join(config["report_folder"],fn), engine="xlsxwriter")
+    fn = (
+        config["report_filename"].replace("CAMPUS", campus).replace("DATE", date_string)
+    )
+    writer = pd.ExcelWriter(
+        os.path.join(config["report_folder"], fn), engine="xlsxwriter"
+    )
     wb = writer.book
     formats = create_formats(wb, config["excel_formats"])
 
@@ -218,7 +344,9 @@ def create_excel(dfs, campus, config, debug):
     create_awards_tab(writer, dfs["award_report"], formats)
 
     # Students tab
-    create_students_tab(writer, dfs["student_report"], formats, hide_campus=(campus=="All"))
+    create_students_tab(
+        writer, dfs["student_report"], formats, hide_campus=(campus == "All")
+    )
     # Hidden college lookup
     create_college_money_tab(writer, dfs["college"], formats)
     # Summary tab
@@ -233,6 +361,8 @@ def build_student_df(dfs, campus, config, debug):
     all_student_fields = []
     live_student_fields = []  # to hold the excel names
     live_student_targets = []  # to hold the live names
+    # live_decision_fields = []  # to hold excel names for decision tabl
+    # live_decision_targets = []  # to hold the live names
     complex_student_fields = []
 
     for column in report_student_fields:
@@ -274,6 +404,11 @@ def build_student_df(dfs, campus, config, debug):
             student_df[column] = dfs["live_efc"].index.map(
                 lambda x: dfs["ros"].loc[x, tokens[1]]
             )
+        elif tokens[0] == "DECISION":
+            if "live_decision" in dfs:
+                student_df[column] = dfs["live_efc"].index.map(
+                    lambda x: dfs["live_decision"].loc[x, tokens[1]]
+                )
 
     for column, target in (
         f for f in complex_student_fields if f[1].startswith("SPECIAL")
@@ -350,8 +485,9 @@ def build_award_df(dfs, campus, config, debug):
         elif tokens[0] == "APPS":
             test_df = dfs["app"][["NCES", "hs_student_id", tokens[-1]]].copy()
             test_df["MergeIndex"] = (
-                test_df.loc[:, "NCES"].astype(str) + ":" +
-                test_df.loc[:, "hs_student_id"].astype(str)
+                test_df.loc[:, "NCES"].astype(str)
+                + ":"
+                + test_df.loc[:, "hs_student_id"].astype(str)
             )
             test_df.set_index("MergeIndex", inplace=True)
             test_df.drop_duplicates(subset=["NCES", "hs_student_id"], inplace=True)
