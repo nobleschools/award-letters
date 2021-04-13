@@ -85,6 +85,18 @@ def _do_initial_output(writer, df, sheet_name, na_rep, index=True):
     return (wb, ws, sheet_name, max_row)
 
 
+def create_summary_tab(writer, config, format_db, do_campus):
+    """Adds the Summary tab to the output"""
+    wb = writer.book
+    ws = wb.add_worksheet("Summary")
+    for c, column in enumerate(config["columns"]):
+        for label, fmt in column.items():
+            ws.write(0, c, label, format_db[fmt])
+    row_labels = config["campuses"] if do_campus else config["strats"]
+    for r, label in enumerate(row_labels, start=1):
+        ws.write(r, 0, label)
+
+
 def create_awards_tab(writer, df, format_db):
     """Adds the Awards tab to the output"""
     df.drop(columns=["Unique", "Award", "MoneyCode"], inplace=True)
@@ -291,7 +303,7 @@ def create_students_tab(writer, df, format_db, hide_campus=False):
 
 def create_college_money_tab(writer, df, format_db):
     """Creates AllColleges from static file"""
-    wb, ws, sn, max_row = _do_initial_output(writer, df, "CollegeMoney", "N/A")
+    wb, ws, sn, max_row = _do_initial_output(writer, df, "CollegeMoneyData", "N/A")
 
     ws.set_column("D:E", 7, format_db["single_percent_centered"])
     ws.set_column("B:B", 40)
@@ -347,9 +359,15 @@ def create_excel(dfs, campus, config, debug):
     create_students_tab(
         writer, dfs["student_report"], formats, hide_campus=(campus == "All")
     )
+
+    # Summary tab
+    #create_summary_tab(
+    #    writer, config["summary_settings"], formats, do_campus=(campus == "All")
+    #)
+
     # Hidden college lookup
     create_college_money_tab(writer, dfs["college"], formats)
-    # Summary tab
+
     # OptionsReport (maybe don't create in Excel?)
     writer.save()
 

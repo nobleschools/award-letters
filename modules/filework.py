@@ -68,6 +68,7 @@ def process_config(settings_file, campus):
         "decision_option_fields",
         "live_decision_fields",
         "report_student_fields",
+        "summary_settings",
     ]:
         config[key] = cfg[key]
 

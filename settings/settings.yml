@@ -338,8 +338,54 @@ report_student_fields: #Columns in 'Students' tab (generally from live_efc)
     - 'Out of Pocket at Choice (pulls from Award data tab weekly)': DECISION:Out of Pocket at Choice (pulls from Award data tab weekly)
     - 'EFC (pulls from EFC tab)': DECISION:EFC (pulls from EFC tab)
     - 'Exceeds Goal? (no more than 3000 over EFC)': DECISION:Exceeds Goal? (no more than 3000 over EFC)
-    - 'Flag for AC (use for notes to help AC with summer counseling)': DECISION:Flag for AC (use for notes to help AC with summer counseling)
+    #- 'Flag for AC (use for notes to help AC with summer counseling)': DECISION:Flag for AC (use for notes to help AC with summer counseling)
     - 'Comments (use for undermatching and affordability concerns)': DECISION:Comments (use for undermatching and affordability concerns)
+
+summary_settings:
+    columns:
+        - Strategy: p_header
+        - '# Students': p_header
+        - 'Target Grad Rate (TGR)': p_header_y
+        - 'Total 4 year value of scholarships awarded': p_header_o
+        - 'Average 4 year value of scholarships per student': p_header_o
+        - '% of students with decisions': p_header_y
+        - '% of awards collected': p_header_y
+        - PGR: p_header
+        - 'PGR-TGR': p_header
+        - '% of students w/in 10% of TGR': p_header
+        - '% of students w/ award at choice': p_header_o
+        - 'Avg. unmet need at choice college': p_header_o
+    strats:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
+        - 10
+        - 11
+        - TBD
+    campuses:
+        - Baker
+        - Bulls
+        - Butler
+        - Comer
+        - DRW
+        - Golder
+        - Hansberry
+        - Johnson
+        - Mansueto
+        - Muchin
+        - Noble
+        - Pritzker
+        - Rauner
+        - RoweClark
+        - Speer
+        - TNA
+        - UIC
 
 
 report_student_sorts:

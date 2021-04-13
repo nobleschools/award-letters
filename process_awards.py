@@ -194,9 +194,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.campus == "All" and (args.mode not in
-                                 ["combine"]):
+                                 ["combine", "report"]):
         # Special meta_function to loop through all
         all_main(args.settings_file, args.mode, args.campus, args.debug, args.skip)
+    elif args.campus == "All" and args.mode == "report":
+        # First loop through all campuses individually
+        all_main(args.settings_file, args.mode, args.campus, args.debug, args.skip)
+        # Then call for the entire network
+        main(args.settings_file, args.mode, campus, args.debug)
     else:
         campus = "All" if args.mode == "combine" else args.campus
         main(args.settings_file, args.mode, campus, args.debug)
