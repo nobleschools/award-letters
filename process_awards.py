@@ -201,7 +201,7 @@ if __name__ == "__main__":
         # First loop through all campuses individually
         all_main(args.settings_file, args.mode, args.campus, args.debug, args.skip)
         # Then call for the entire network
-        main(args.settings_file, args.mode, campus, args.debug)
+        main(args.settings_file, args.mode, "All", args.debug)
     else:
         campus = "All" if args.mode == "combine" else args.campus
         main(args.settings_file, args.mode, campus, args.debug)

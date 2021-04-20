@@ -473,6 +473,23 @@ excel_formats:
     centered_integer:
         num_format: '#0'
         align: center
+    sum_dollar:
+        num_format: '_($* #,##00_);_($* (#,##0);_($* "-"??_);_(@_)'
+        bold: True
+        bottom: 6
+        top: 2
+    sum_percent:
+        num_format: 0%
+        align: center
+        bold: True
+        bottom: 6
+        top: 2
+    sum_centered_integer:
+        num_format: '#0'
+        align: center
+        bold: True
+        bottom: 6
+        top: 2
 
     # non-colored non-number formats
     centered:

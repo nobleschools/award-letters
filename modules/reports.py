@@ -92,9 +92,78 @@ def create_summary_tab(writer, config, format_db, do_campus):
     for c, column in enumerate(config["columns"]):
         for label, fmt in column.items():
             ws.write(0, c, label, format_db[fmt])
+
+    # Summarizes by campus if this is all campuses, otherwise by strategy
     row_labels = config["campuses"] if do_campus else config["strats"]
+    s_name = "Campus" if do_campus else "Strats"
     for r, label in enumerate(row_labels, start=1):
-        ws.write(r, 0, label)
+        rx = r + 1  # Excel reference is 1-indexed
+        ws.write(r, 0, label)  # field to summarize by
+        ws.write(r, 1, f"=COUNTIF({s_name},A{rx})")  # student column
+        ws.write(r, 2, f'=IF(B{rx}>0,SUMIF({s_name},A{rx},MGRs)/B{rx},"")')  # TGR
+        ws.write(r, 3, f'=IF(A{rx}>0,SUMIFS(Schol4YR,{s_name},$A{rx}),"")')  # Total 4yr
+        ws.write(r, 4, f'=IF(B{rx}>0,D{rx}/B{rx},"")')  # Avg 4yr
+        ws.write(r, 5, f'=IF(B{rx}>0,COUNTIFS(PGR,"<>TBD",{s_name},$A{rx})/$B{rx},"")')  # % decided
+        ws.write(  # % of awards collected
+            r,
+            6,
+            f'=IF(AND(B{rx}>0,SUMIFS(Accepts,{s_name},$A{rx})),SUMIFS(UAwards,{s_name},$A{rx})/SUMIFS(Accepts,{s_name},$A{rx}),"")',
+        )
+        ws.write(  # PGR
+            r,
+            7,
+            f'=IF(AND(B{rx}>0,F{rx}>0),SUMIF({s_name},A{rx},PGR)/COUNTIFS(PGR,"<>TBD",{s_name},$A{rx}),"")',
+        )
+        ws.write(  # PGR-TGR
+            r,
+            8,
+            f'=IF(AND(B{rx}>0,F{rx}>0),SUMIF({s_name},A{rx},PGRTGR)/COUNTIFS(PGR,"<>TBD",{s_name},$A{rx}),"")',
+        )
+        ws.write(  # % of students w/in 10% of TGR
+            r,
+            9,
+            f'=IF(AND(B{rx}>0,F{rx}>0),COUNTIFS({s_name},A{rx},PGRin10,"Yes")/COUNTIFS(PGRin10,"<>TBD",{s_name},$A{rx}),"")',
+        )
+        ws.write(  # % of students w/ award at choice
+            r,
+            10,
+            f'=IF(AND(B{rx}>0,F{rx}>0),COUNTIFS({s_name},A{rx}, OOP,"<>TBD")/COUNTIFS(PGR,"<>TBD",{s_name},$A{rx}),"")',
+        )
+        ws.write(  # Avg unmet need at choice college
+            r,
+            11,
+            f'=IF(COUNTIFS({s_name},A{rx}, UMN,"<>TBD")>0,SUMIFS(UMN,{s_name},A{rx}, UMN,"<>TBD")/COUNTIFS({s_name},A{rx}, UMN,"<>TBD"),"")',
+        )
+    
+    # Summary row
+    fr = 2
+    lr = len(row_labels) + 1  # This is a little tricky--it's the write location and last value row to sum
+    lrx = lr + 1
+    ws.write(lr, 1, f'=SUM(B{fr}:B{lr})', format_db["sum_centered_integer"])
+    ws.write(lr, 2, f'=SUMPRODUCT(B{fr}:B{lr},C{fr}:C{lr})/B{lrx}', format_db["sum_percent"])
+    ws.write(lr, 3, f'=SUM(D{fr}:D{lr})', format_db["sum_dollar"])
+    ws.write(lr, 4, f'=IF(B{lrx}>0,D{lrx}/B{lrx},"")', format_db["sum_dollar"])
+    ws.write(lr, 5, f'=SUMPRODUCT(B{fr}:B{lr},F{fr}:F{lr})/B{lrx}', format_db["sum_percent"])  # % decided
+    ws.write(lr, 6, f'=SUM(UAwards)/SUM(Accepts)', format_db["sum_percent"])
+    ws.write(lr, 7, f'=SUMPRODUCT(B{fr}:B{lr},H{fr}:H{lr})/B{lrx}', format_db["sum_percent"])
+    ws.write(lr, 8, f'=SUMPRODUCT(B{fr}:B{lr},I{fr}:I{lr})/B{lrx}', format_db["sum_percent"])
+    ws.write(lr, 9, f'=SUMPRODUCT(B{fr}:B{lr},J{fr}:J{lr})/B{lrx}', format_db["sum_percent"])
+    ws.write(lr,10, f'=SUMPRODUCT(B{fr}:B{lr},K{fr}:K{lr})/B{lrx}', format_db["sum_percent"])
+    ws.write(lr,11, f'=SUMPRODUCT(B{fr}:B{lr},L{fr}:L{lr})/B{lrx}', format_db["sum_dollar"])
+
+    # Final formatting
+    ws.set_column("A:A", 8.09, format_db["left_normal_text"]) 
+    ws.set_column("B:B", 8.09, format_db["centered_integer"])
+    ws.set_column("C:C", 9.55, format_db["single_percent_centered"])
+    ws.set_column("D:D", 13.73, format_db["dollar_no_cents_fmt"])
+    ws.set_column("E:E", 12.73, format_db["dollar_no_cents_fmt"])
+    ws.set_column("F:F", 9.73, format_db["single_percent_centered"])
+    ws.set_column("G:G", 8.09, format_db["single_percent_centered"])
+    ws.set_column("H:I", 6.36, format_db["single_percent_centered"])
+    ws.set_column("J:K", 8.09, format_db["single_percent_centered"])
+    ws.set_column("L:L", 10.91, format_db["dollar_no_cents_fmt"])
+
+    ws.activate()
 
 
 def create_awards_tab(writer, df, format_db):
@@ -166,8 +235,15 @@ def create_students_tab(writer, df, format_db, hide_campus=False):
     ws.write(0, 23, "Reason for not meeting TGR", format_db["p_header_o"])
     ws.write(0, 24, "Out of Pocket at Choice", format_db["p_header_o"])
     ws.write(0, 25, "Unmet need", format_db["p_header_o"])
-    ws.write(0, 26, "Exceeds Goal? (no more than 3000 over EFC)", format_db["p_header_o"])
-    ws.write(0, 27, "Comments (use for undermatching and affordability concerns)", format_db["p_header_o"])
+    ws.write(
+        0, 26, "Exceeds Goal? (no more than 3000 over EFC)", format_db["p_header_o"]
+    )
+    ws.write(
+        0,
+        27,
+        "Comments (use for undermatching and affordability concerns)",
+        format_db["p_header_o"],
+    )
 
     for r in range(1, max_row):
         ws.write(
@@ -218,40 +294,39 @@ def create_students_tab(writer, df, format_db, hide_campus=False):
             n_a="TBD",
             f=format_db["centered"],
         )
-        safe_write(
-            ws,
-            r,
-            23,
-            df["Reason for not meeting TGR"].iloc[r - 1]
-        )
+        safe_write(ws, r, 23, df["Reason for not meeting TGR"].iloc[r - 1])
         safe_write(
             ws,
             r,
             24,
-            df["Out of Pocket at Choice (pulls from Award data tab weekly)"].iloc[r - 1],
+            df["Out of Pocket at Choice (pulls from Award data tab weekly)"].iloc[
+                r - 1
+            ],
             n_a="TBD",
             f=format_db["dollar_no_cents_fmt"],
-            make_float=True
+            make_float=True,
         )
         safe_write(
             ws,
             r,
             25,
             f'=IF(AND(ISNUMBER(Y{r+1}),ISNUMBER(D{r+1})),MAX(Y{r+1}-D{r+1},0),"TBD")',
-            n_a="TBD"
+            n_a="TBD",
         )
         safe_write(
             ws,
             r,
             26,
             df["Exceeds Goal? (no more than 3000 over EFC)"].iloc[r - 1],
-            n_a="TBD"
+            n_a="TBD",
         )
         safe_write(
             ws,
             r,
             27,
-            df["Comments (use for undermatching and affordability concerns)"].iloc[r - 1]
+            df["Comments (use for undermatching and affordability concerns)"].iloc[
+                r - 1
+            ],
         )
 
     # format data columns
@@ -274,6 +349,7 @@ def create_students_tab(writer, df, format_db, hide_campus=False):
 
     ws.set_row(0, 60)
     names = {
+        "Campus": "A",
         "SIDs": "B",
         "LastFirst": "C",
         "EFCs": "D",
@@ -361,9 +437,9 @@ def create_excel(dfs, campus, config, debug):
     )
 
     # Summary tab
-    #create_summary_tab(
-    #    writer, config["summary_settings"], formats, do_campus=(campus == "All")
-    #)
+    create_summary_tab(
+        writer, config["summary_settings"], formats, do_campus=(campus == "All")
+    )
 
     # Hidden college lookup
     create_college_money_tab(writer, dfs["college"], formats)
@@ -413,8 +489,8 @@ def build_student_df(dfs, campus, config, debug):
     ):
         # parse the target and then call the appropriate function
         # to add a column to award_df
-        if debug:
-            print(f"{column} w spec({target})")
+        # if debug:
+        #     print(f"{column} w spec({target})")
         tokens = target.split(sep=":")
         if tokens[0] == "INDEX":
             student_df[column] = dfs["live_efc"].index
@@ -431,8 +507,8 @@ def build_student_df(dfs, campus, config, debug):
     for column, target in (
         f for f in complex_student_fields if f[1].startswith("SPECIAL")
     ):
-        if debug:
-            print(f"{column} w spec({target})")
+        # if debug:
+        #     print(f"{column} w spec({target})")
         tokens = target.split(sep=":")
         student_df[column] = student_df.apply(
             _do_special_award, args=(column, tokens[1:]), axis=1
@@ -442,6 +518,8 @@ def build_student_df(dfs, campus, config, debug):
     # These generators work on a list of single pair dicts
     sort_terms = [list(item.keys())[0] for item in report_student_sorts]
     sort_order = [list(item.values())[0] for item in report_student_sorts]
+    # recast the EFC as numbers where possible:
+    student_df.EFC = student_df.EFC.apply(lambda x: pd.to_numeric(x, errors="ignore"))
     return student_df.sort_values(by=sort_terms, ascending=sort_order)
 
 
