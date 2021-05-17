@@ -274,6 +274,8 @@ decision_header_row:
 decision_defaults: #keys are the options and values are "grad rate" for choice
     Standard:
         'Ambitious Postsecondary Pathway (select to right)': 0.17
+        'IEP: Occupational CPS HS': 'N/A'
+        'IEP: 5th year at Noble campus': 'N/A'
         'No college/working': 0.0
 
 ###################################################################
