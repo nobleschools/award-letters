@@ -75,6 +75,19 @@ def main(settings_file, mode, campus, debug):
         gdocwork.read_current_doc(dfs, campus, config, debug)
         filework.save_live_dfs(dfs, campus, config, debug)
 
+    elif mode == "archive":
+        config = filework.process_config(settings_file, campus)
+        dfs = {"key": filework.read_doclist(config["key_file"])}
+        # Rather than read current, read the current and the local
+        filework.read_local_live_data(dfs, campus, config, debug)
+        for df in ["efc", "award", "decision"]:
+            if f"live_{df}" in dfs:
+                dfs[f"old_live_{df}"] = dfs[f"live_{df}"]
+        gdocwork.read_current_doc(dfs, campus, config, debug)
+        gdocwork.correct_headers(dfs, campus, config, debug)
+        # Finish correct_headers by adding a push to Apps script plus a re-read of the live_dfs
+        # filework.save_live_dfs(dfs, campus, config, debug)
+
     elif mode == "make_new":
         config = filework.process_config(settings_file, campus)
         dfs = filework.read_dfs(config, debug)
@@ -186,7 +199,7 @@ if __name__ == "__main__":
         "--mode",
         dest="mode",
         action="store",
-        help="Function to execute [all/save/combine/make_new/"
+        help="Function to execute [all/save/combine/make_new/archive/"
         + "push_local/refresh_decisions/report/report_single]",
         default="all",
     )
@@ -194,7 +207,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.campus == "All" and (args.mode not in
-                                 ["combine", "report"]):
+                                 ["combine", "report", "archive"]):
         # Special meta_function to loop through all
         all_main(args.settings_file, args.mode, args.campus, args.debug, args.skip)
     elif args.campus == "All" and args.mode == "report":
@@ -202,6 +215,11 @@ if __name__ == "__main__":
         main(args.settings_file, args.mode, "All", args.debug)
         # Then loop through all campuses individually
         all_main(args.settings_file, args.mode, args.campus, args.debug, args.skip)
+    elif args.campus == "All" and args.mode == "archive":
+        #take a snapshot of the current files in the live_backups folder
+        # Then loop through all campuses individually
+        all_main(args.settings_file, args.mode, args.campus, args.debug, args.skip)
+        # Then save off the archive
     else:
         campus = "All" if args.mode == "combine" else args.campus
         main(args.settings_file, args.mode, campus, args.debug)

@@ -4,6 +4,7 @@ Module for doing direct reads and writes from the google docs
 """
 
 from time import time
+import sys
 import pandas as pd
 import numpy as np
 
@@ -88,6 +89,49 @@ def _write_df_to_sheet(
                 write_range[i].value = flat_data[i]
 
         ws.update_cells(write_range, value_input_option="USER_ENTERED")
+
+
+def _compare_first_n(series_1, series_2, n):
+    """
+    Utility function that sees if the first n rows of a Pandas series are the same
+    """
+    for i in range(n):
+        if series_1.iloc[i] != series_2.iloc[i]:
+            return False
+    return True
+
+
+def correct_headers(dfs, campus, config, debug):
+    """
+    Compares the old_live_x dataframe with the live_x dataframe to see if
+    any core headers have disappeared. If so, fixes the header in the Google
+    Sheet and launches a re-read of the live data
+    """
+    error_count = 0
+    sheets = ["efc"]  # , "award", "decision"]
+    for sheet in sheets:
+        if f"old_live_{sheet}" in dfs:
+            old_columns = dfs[f"old_live_{sheet}"].columns.values
+            print(f"old_live_{sheet} columns: {old_columns}")
+        if f"live_{sheet}" in dfs:
+            new_columns = dfs[f"live_{sheet}"].columns.values
+            print(f"live_{sheet} columns: {dfs['live_'+sheet].columns.values}")
+        if (f"old_live_{sheet}" in dfs) & (f"live_{sheet}" in dfs):
+            missing_from_old = list(set(new_columns)-set(old_columns))
+            missing_from_new = list(set(old_columns)-set(new_columns))
+            if (len(missing_from_old) == 1) & (len(missing_from_new) == 1):
+                print(dfs["live_"+sheet][missing_from_old[0]].iloc[:5])
+                print(dfs["old_live_"+sheet][missing_from_new[0]].iloc[:5])
+                if _compare_first_n(dfs["live_"+sheet][missing_from_old[0]],
+                                    dfs["old_live_"+sheet][missing_from_new[0]], 5):
+                    print(f"The current header of {missing_from_old[0]} needs to be replaced with {missing_from_new[0]}")
+            elif len(missing_from_new) > 1:
+                print(f"Missing from old: {missing_from_old}")
+                print(f"Missing from new: {missing_from_new}")
+                print("Aborting--you should fix these header errors")
+                sys.exit(-1)
+            else:  # No missing headers
+                pass
 
 
 def read_current_doc(dfs, campus, config, debug):
