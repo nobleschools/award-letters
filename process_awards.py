@@ -135,6 +135,8 @@ def main(settings_file, mode, campus, debug):
             dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
         )
         filework.read_local_live_data(dfs, campus, config, debug)
+        # Next line is a hack to read the "All" version of the decision tab instead of the campus one
+        filework.read_local_live_all_decision(dfs, campus, config, debug)
         reports.create_report_tables(dfs, campus, config, debug)
         reports.create_excel(dfs, campus, config, debug)
 
@@ -145,6 +147,8 @@ def main(settings_file, mode, campus, debug):
             dfs["ros"], dfs["strat"], dfs["target"], dfs["acttosat"], campus, debug
         )
         filework.read_local_live_data(dfs, campus, config, debug)
+        # Next line is a hack to read the "All" version of the decision tab instead of the campus one
+        filework.read_local_live_all_decision(dfs, campus, config, debug)
         reports.create_report_tables(dfs, campus, config, debug)
         # First line creates a combined campus file
         pdf_reports.create_pdfs(dfs, campus, config, debug, single_pdf=False)

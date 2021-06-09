@@ -134,6 +134,18 @@ def save_live_dfs(dfs, campus, config, debug):
         dfs["live_" + key].to_csv(full_path, index_label=index_label)
 
 
+def read_local_live_all_decision(dfs, campus, config, debug):
+    """Hack to repeat the below function for the decision tab reading the "All" file"""
+    filename = config["live_backup_prefix"] + "-ALL-decision.csv"
+    full_path = os.path.join(config["live_backup_folder"], filename)
+    if os.path.isfile(full_path):
+        this_df = pd.read_csv(full_path, index_col=0)
+        dfs["live_decision"] = this_df[this_df["Campus"]==campus]
+    else:
+        if debug:
+            print("{} does not exist".format(full_path))
+
+
 def read_local_live_data(dfs, campus, config, debug):
     """Loads the live data (recently read from the Google Doc) to the file
     into the live dataframes"""

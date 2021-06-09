@@ -49,6 +49,7 @@ def create_formats(wb, cfg_fmt, f_db={}):
 
 def make_excel_indices():
     """returns an array of Excel header columns from A through ZZ"""
+    import string  # We're not currently using this function, so leaving import here so as not to forget
     alphabet = string.ascii_uppercase
     master = list(alphabet)
     for i in range(len(alphabet)):
