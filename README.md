@@ -1,5 +1,5 @@
 # award-letters
-Tools for processing and maintaining Google Sheets about award letters
+Tools for processing and maintaining Google Sheets about award letters.
 
 ## Overall structure
 Works with Google Docs for award data entry and performs operations
