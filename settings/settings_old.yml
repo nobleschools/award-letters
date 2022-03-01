@@ -241,13 +241,11 @@ decision_option_fields:
 ###################################################################
 # Details about the drive setup
 #
-drive_folder: 1cjrHd7PRgPt0R8aznGpgqAU25XYPxej2 #2022
-#drive_folder: 1ty-Qwnyo4s16eIHkkM_tLwIRmSSZaFch #2021 [REAL]
-#drive_folder: 170xfyi8I00giWO3XMSJRBUMXN3Wwn1H2 #2021 [TEST]
+drive_folder: 1ty-Qwnyo4s16eIHkkM_tLwIRmSSZaFch
 #drive_folder: 1dbDCbC6lLHR7Ez9H3-9knBuL9k0JnJ4K 2020
 #drive_folder: 19bQt8AJI6mYiUAycIOYhGmegGwPCpkM_ 2019
 #drive_folder: 1NGcIt5fvcwjNdAa-JTop8qwXG1vEz4ha 2018
-file_stem: 2022 Aid Award Tracker
+file_stem: 2021 Aid Award Tracker
 
 ###################################################################
 # Details about the Google doc structure:
@@ -372,7 +370,6 @@ summary_settings:
         - 10
         - 11
         - TBD
-        - N/A
     campuses:
         - Baker
         - Bulls
