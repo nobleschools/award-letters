@@ -407,7 +407,7 @@ report_student_sorts:
       - LastFirst: True
     Rauner:
       - Campus: True
-      - Counselor: True
+      - Cohort: True
       - LastFirst: True
     Bulls:
       - Campus: True

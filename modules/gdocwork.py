@@ -117,14 +117,19 @@ def correct_headers(dfs, campus, config, debug):
             new_columns = dfs[f"live_{sheet}"].columns.values
             print(f"live_{sheet} columns: {dfs['live_'+sheet].columns.values}")
         if (f"old_live_{sheet}" in dfs) & (f"live_{sheet}" in dfs):
-            missing_from_old = list(set(new_columns)-set(old_columns))
-            missing_from_new = list(set(old_columns)-set(new_columns))
+            missing_from_old = list(set(new_columns) - set(old_columns))
+            missing_from_new = list(set(old_columns) - set(new_columns))
             if (len(missing_from_old) == 1) & (len(missing_from_new) == 1):
-                print(dfs["live_"+sheet][missing_from_old[0]].iloc[:5])
-                print(dfs["old_live_"+sheet][missing_from_new[0]].iloc[:5])
-                if _compare_first_n(dfs["live_"+sheet][missing_from_old[0]],
-                                    dfs["old_live_"+sheet][missing_from_new[0]], 5):
-                    print(f"The current header of {missing_from_old[0]} needs to be replaced with {missing_from_new[0]}")
+                print(dfs["live_" + sheet][missing_from_old[0]].iloc[:5])
+                print(dfs["old_live_" + sheet][missing_from_new[0]].iloc[:5])
+                if _compare_first_n(
+                    dfs["live_" + sheet][missing_from_old[0]],
+                    dfs["old_live_" + sheet][missing_from_new[0]],
+                    5,
+                ):
+                    print(
+                        f"The current header of {missing_from_old[0]} needs to be replaced with {missing_from_new[0]}"
+                    )
             elif len(missing_from_new) > 1:
                 print(f"Missing from old: {missing_from_old}")
                 print(f"Missing from new: {missing_from_new}")
@@ -175,8 +180,11 @@ def read_current_doc(dfs, campus, config, debug):
             dfs[live_df].set_index("StudentID", inplace=True)
 
     if debug:
-        print("{} lines in award tab and {} lines in efc tab".format(
-                len(dfs["live_award"]), len(dfs["live_efc"])))
+        print(
+            "{} lines in award tab and {} lines in efc tab".format(
+                len(dfs["live_award"]), len(dfs["live_efc"])
+            )
+        )
 
 
 def _do_table_diff(current_index_set, new_index_set):
@@ -534,10 +542,14 @@ def sync_doc_rows(dfs, campus, config, debug):
             if debug:
                 print("done in {:.2f} seconds".format(time() - t0), flush=True)
                 # print(a_response, flush=True)
-        else:  # This data set is too large, so we're going to push twice
-            alold1 = award_list_of_list_data[:MAX_ROWS_ADD]
-            alold2 = award_list_of_list_data[MAX_ROWS_ADD:]
-            for alold in [alold1, alold2]:
+        else:  # This data set is too large, so we're going to push multiple times
+            if debug:
+                print(f"Breaking into groups of {MAX_ROWS_ADD} or less.", flush=True)
+            alol_chunks = [
+                award_list_of_list_data[x : x + MAX_ROWS_ADD]
+                for x in range(0, len(award_list_of_list_data), MAX_ROWS_ADD)
+            ]
+            for alold in alol_chunks:
                 t0 = time()
                 a_response = googleapi.call_script_service(
                     {
