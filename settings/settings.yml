@@ -405,6 +405,11 @@ report_student_sorts:
       - Campus: True
       - Counselor: True
       - LastFirst: True
+    UIC:
+      - Campus: True
+      - Counselor: True
+      - Cohort: True
+      - LastFirst: True
     Rauner:
       - Campus: True
       - Cohort: True
