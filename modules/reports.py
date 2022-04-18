@@ -86,17 +86,29 @@ def _do_initial_output(writer, df, sheet_name, na_rep, index=True):
     return (wb, ws, sheet_name, max_row)
 
 
-def create_summary_tab(writer, config, format_db, do_campus):
-    """Adds the Summary tab to the output"""
+def create_summary_tab(writer, config, format_db, do_campus, do_counselor=False):
+    """
+    Adds the Summary tab to the output. If summarizing by counselor,
+    do_counselor will be a list of counselor names
+    """
     wb = writer.book
-    ws = wb.add_worksheet("Summary")
+    sum_label = "Counselor_Summary" if do_counselor else "Summary"
+    ws = wb.add_worksheet(sum_label)
     for c, column in enumerate(config["columns"]):
         for label, fmt in column.items():
             ws.write(0, c, label, format_db[fmt])
 
-    # Summarizes by campus if this is all campuses, otherwise by strategy
-    row_labels = config["campuses"] if do_campus else config["strats"]
-    s_name = "Campus" if do_campus else "Strats"
+    # Select summary options--campus (for whole network) or strategy/counselor
+    if do_campus:
+        row_labels = config["campuses"]
+        s_name = "Campus"
+    elif do_counselor:
+        row_labels = do_counselor
+        s_name = "Counselors"
+    else:
+        row_labels = config["strats"]
+        s_name = "Strats"
+
     for r, label in enumerate(row_labels, start=1):
         rx = r + 1  # Excel reference is 1-indexed
         ws.write(r, 0, label)  # field to summarize by
@@ -164,7 +176,8 @@ def create_summary_tab(writer, config, format_db, do_campus):
     ws.set_column("J:K", 8.09, format_db["single_percent_centered"])
     ws.set_column("L:L", 10.91, format_db["dollar_no_cents_fmt"])
 
-    ws.activate()
+    if not do_counselor:
+        ws.activate()
 
 
 def create_awards_tab(writer, df, format_db):
@@ -440,6 +453,15 @@ def create_excel(dfs, campus, config, debug):
     # Summary tab
     create_summary_tab(
         writer, config["summary_settings"], formats, do_campus=(campus == "All")
+    )
+
+    # Summary tab with counselor summaries
+    counselor_list = dfs["student_report"]["Counselor"].unique()
+    counselor_list = sorted(counselor_list) if len(counselor_list) else ["TBD",]
+    print(f"Counselors are {counselor_list}")
+    create_summary_tab(
+        writer, config["summary_settings"], formats, do_campus=False,
+        do_counselor=counselor_list
     )
 
     # Hidden college lookup
