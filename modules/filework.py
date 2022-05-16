@@ -198,7 +198,7 @@ def combine_all_local_files(dfs, config, debug):
             # Reduce to just the columns we want
             these_fields = config["live_" + key + "_fields"]
             big_df["live_" + key] = big_df["live_" + key][these_fields]
-            filename = config["live_backup_prefix"] + "-ALL-" + key + ".csv"
+            filename = config["live_backup_prefix"] + "-All-" + key + ".csv"
             full_path = os.path.join(config["live_backup_folder"], filename)
             # If the file already exists, we'll backup to the archive directory
             if os.path.isfile(full_path):
