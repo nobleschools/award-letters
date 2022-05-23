@@ -8,7 +8,9 @@ to sync with local Naviance driven data
 Relies on a set of AppsScript code not shown here
 
 ## Details on setting up AppsScript
-(still to be written)
+The main issue with AppsScript is having the credentials to run this code
+If you look at the files in .credentials (copied from a working repo) you
+can grab a new set of credentials from that Google Project
 
 
 ## Starting up for the year
