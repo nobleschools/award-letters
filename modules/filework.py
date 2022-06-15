@@ -136,7 +136,7 @@ def save_live_dfs(dfs, campus, config, debug):
 
 def read_local_live_all_decision(dfs, campus, config, debug):
     """Hack to repeat the below function for the decision tab reading the "All" file"""
-    filename = config["live_backup_prefix"] + "-ALL-decision.csv"
+    filename = config["live_backup_prefix"] + "-All-decision.csv"
     full_path = os.path.join(config["live_backup_folder"], filename)
     if os.path.isfile(full_path):
         this_df = pd.read_csv(full_path, index_col=0)
